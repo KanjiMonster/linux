@@ -640,6 +640,80 @@ static struct board_info __initdata board_DWVS0 = {
 #endif
 
 /*
+ * known 6368 boards
+ */
+#ifdef CONFIG_BCM63XX_CPU_6368
+static struct board_info __initdata board_96368mvwg = {
+	.name				= "96368MVWG",
+	.expected_cpu_id		= 0x6368,
+
+	.has_uart0			= 1,
+	.has_pci			= 1,
+	.has_enetsw			= 1,
+
+	.enetsw = {
+		.used_ports = {
+			[1] = {
+				.used	= 1,
+				.phy_id	= 2,
+				.name	= "port1",
+			},
+
+			[2] = {
+				.used	= 1,
+				.phy_id	= 3,
+				.name	= "port2",
+			},
+
+			[4] = {
+				.used	= 1,
+				.phy_id	= 0x12,
+				.external_phy = 1,
+				.name	= "port0",
+			},
+
+			[5] = {
+				.used	= 1,
+				.phy_id	= 0x11,
+				.external_phy = 1,
+				.name	= "port3",
+			},
+		},
+	},
+
+	.leds = {
+		{
+			.name		= "adsl",
+			.gpio		= 2,
+			.active_low	= 1,
+		},
+		{
+			.name		= "ppp",
+			.gpio		= 5,
+		},
+		{
+			.name		= "power",
+			.gpio		= 22,
+			.active_low	= 1,
+			.default_trigger = "default-on",
+		},
+		{
+			.name		= "wps",
+			.gpio		= 23,
+			.active_low	= 1,
+		},
+		{
+			.name		= "ppp-fail",
+			.gpio		= 31,
+		},
+	},
+
+	.has_ohci0 = 1,
+	.has_ehci0 = 1,
+};
+#endif
+
+/*
  * all boards
  */
 static const struct board_info __initdata *bcm963xx_boards[] = {
@@ -669,6 +743,10 @@ static const struct board_info __initdata *bcm963xx_boards[] = {
 	&board_96358vw2,
 	&board_AGPFS0,
 	&board_DWVS0,
+#endif
+
+#ifdef CONFIG_BCM63XX_CPU_6368
+	&board_96368mvwg,
 #endif
 };
 
@@ -830,12 +908,25 @@ void __init board_prom_init(void)
 		bcm63xx_pci_enabled = 1;
 		if (BCMCPU_IS_6348())
 			val |= GPIO_MODE_6348_G2_PCI;
+
+		if (BCMCPU_IS_6368())
+			val |= GPIO_MODE_6368_PCI_REQ1 |
+				GPIO_MODE_6368_PCI_GNT1 |
+				GPIO_MODE_6368_PCI_INTB |
+				GPIO_MODE_6368_PCI_REQ0 |
+				GPIO_MODE_6368_PCI_GNT0;
 	}
 #endif
 
 	if (board.has_pccard) {
 		if (BCMCPU_IS_6348())
 			val |= GPIO_MODE_6348_G1_MII_PCCARD;
+
+		if (BCMCPU_IS_6368())
+			val |= GPIO_MODE_6368_PCMCIA_CD1 |
+				GPIO_MODE_6368_PCMCIA_CD2 |
+				GPIO_MODE_6368_PCMCIA_VS1 |
+				GPIO_MODE_6368_PCMCIA_VS2;
 	}
 
 	if (board.has_enet0 && !board.enet0.use_internal_phy) {
@@ -897,6 +988,10 @@ int __init board_register_devices(void)
 	if (board.has_enet1 &&
 	    !board_get_mac_address(board.enet1.mac_addr))
 		bcm63xx_enet_register(1, &board.enet1);
+
+	if (board.has_enetsw &&
+	    !board_get_mac_address(board.enetsw.mac_addr))
+		bcm63xx_enetsw_register(&board.enetsw);
 
 	if (board.has_usbd)
 		bcm63xx_usbd_register(&board.usbd);

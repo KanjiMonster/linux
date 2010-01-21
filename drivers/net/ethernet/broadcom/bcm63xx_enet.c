@@ -1635,7 +1635,6 @@ static int __devinit bcm_enet_probe(struct platform_device *pdev)
 	struct resource *res_mem, *res_irq, *res_irq_rx, *res_irq_tx;
 	struct mii_bus *bus;
 	const char *clk_name;
-	unsigned int iomem_size;
 	int i, ret;
 
 	/* stop if shared driver failed, assume driver->probe will be
@@ -1660,13 +1659,13 @@ static int __devinit bcm_enet_probe(struct platform_device *pdev)
 	if (ret)
 		goto out;
 
-	iomem_size = resource_size(res_mem);
-	if (!request_mem_region(res_mem->start, iomem_size, "bcm63xx_enet")) {
+	if (!request_mem_region(res_mem->start, resource_size(res_mem),
+				"bcm63xx_enet")) {
 		ret = -EBUSY;
 		goto out;
 	}
 
-	priv->base = ioremap(res_mem->start, iomem_size);
+	priv->base = ioremap(res_mem->start, resource_size(res_mem));
 	if (priv->base == NULL) {
 		ret = -ENOMEM;
 		goto out_release_mem;
@@ -1835,7 +1834,7 @@ out_unmap:
 	iounmap(priv->base);
 
 out_release_mem:
-	release_mem_region(res_mem->start, iomem_size);
+	release_mem_region(res_mem->start, resource_size(res_mem));
 out:
 	free_netdev(dev);
 	return ret;
@@ -1905,19 +1904,18 @@ struct platform_driver bcm63xx_enet_driver = {
 static int __devinit bcm_enet_shared_probe(struct platform_device *pdev)
 {
 	struct resource *res;
-	unsigned int iomem_size;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res)
 		return -ENODEV;
 
-	iomem_size = resource_size(res);
-	if (!request_mem_region(res->start, iomem_size, "bcm63xx_enet_dma"))
+	if (!request_mem_region(res->start, resource_size(res),
+				"bcm63xx_enet_dma"))
 		return -EBUSY;
 
-	bcm_enet_shared_base = ioremap(res->start, iomem_size);
+	bcm_enet_shared_base = ioremap(res->start, resource_size(res));
 	if (!bcm_enet_shared_base) {
-		release_mem_region(res->start, iomem_size);
+		release_mem_region(res->start, resource_size(res));
 		return -ENOMEM;
 	}
 	return 0;

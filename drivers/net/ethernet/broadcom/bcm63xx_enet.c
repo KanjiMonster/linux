@@ -1872,6 +1872,8 @@ static int __devexit bcm_enet_remove(struct platform_device *pdev)
 	}
 
 	/* release device resources */
+	clk_disable(priv->mac_clk);
+	clk_put(priv->mac_clk);
 	iounmap(priv->base);
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	release_mem_region(res->start, resource_size(res));

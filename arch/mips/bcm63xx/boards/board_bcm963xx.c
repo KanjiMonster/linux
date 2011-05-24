@@ -25,6 +25,7 @@
 #include <bcm63xx_dev_hsspi.h>
 #include <bcm63xx_dev_pcmcia.h>
 #include <bcm63xx_dev_spi.h>
+#include <bcm63xx_dev_usb_ehci.h>
 #include <bcm63xx_dev_usb_ohci.h>
 #include <bcm63xx_dev_usb_usbd.h>
 #include <board_bcm963xx.h>
@@ -899,6 +900,9 @@ int __init board_register_devices(void)
 
 	if (board.has_usbd)
 		bcm63xx_usbd_register(&board.usbd);
+
+	if (board.has_ehci0)
+		bcm63xx_ehci_register();
 
 	if (board.has_ohci0)
 		bcm63xx_ohci_register();

@@ -1339,6 +1339,11 @@ MODULE_LICENSE ("GPL");
 #define PLATFORM_DRIVER		ehci_platform_driver
 #endif
 
+#ifdef CONFIG_USB_EHCI_BCM63XX
+#include "ehci-bcm63xx.c"
+#define	PLATFORM_DRIVER		ehci_hcd_bcm63xx_driver
+#endif
+
 #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER) && \
     !defined(PS3_SYSTEM_BUS_DRIVER) && !defined(OF_PLATFORM_DRIVER) && \
     !defined(XILINX_OF_PLATFORM_DRIVER)

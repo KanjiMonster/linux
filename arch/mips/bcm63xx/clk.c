@@ -118,21 +118,37 @@ static struct clk clk_ephy = {
  */
 static void enetsw_set(struct clk *clk, int enable)
 {
-	if (!BCMCPU_IS_6368())
+	u32 mask;
+
+	if (!BCMCPU_IS_6328() && !BCMCPU_IS_6368())
 		return;
-	bcm_hwclock_set(CKCTL_6368_ROBOSW_EN |
-			CKCTL_6368_SWPKT_USB_EN |
-			CKCTL_6368_SWPKT_SAR_EN, enable);
+
+	if (BCMCPU_IS_6328())
+		mask = CKCTL_6328_ROBOSW_EN;
+	else
+		mask = CKCTL_6368_ROBOSW_EN | CKCTL_6368_SWPKT_USB_EN |
+		       CKCTL_6368_SWPKT_SAR_EN;
+
+	bcm_hwclock_set(mask, enable);
 	if (enable) {
+		u32 reg;
 		u32 val;
 
+		if (BCMCPU_IS_6328()) {
+			reg = PERF_SOFTRESET_6328_REG;
+			mask = SOFTRESET_6328_ENETSW_MASK;
+		} else {
+			reg = PERF_SOFTRESET_6368_REG;
+			mask = SOFTRESET_6368_ENETSW_MASK;
+		}
+
 		/* reset switch core afer clock change */
-		val = bcm_perf_readl(PERF_SOFTRESET_6368_REG);
-		val &= ~SOFTRESET_6368_ENETSW_MASK;
-		bcm_perf_writel(val, PERF_SOFTRESET_6368_REG);
+		val = bcm_perf_readl(reg);
+		val &= ~mask;
+		bcm_perf_writel(val, reg);
 		msleep(10);
-		val |= SOFTRESET_6368_ENETSW_MASK;
-		bcm_perf_writel(val, PERF_SOFTRESET_6368_REG);
+		val |= mask;
+		bcm_perf_writel(val, reg);
 		msleep(10);
 	}
 }

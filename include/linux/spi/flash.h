@@ -2,7 +2,7 @@
 #define LINUX_SPI_FLASH_H
 
 struct mtd_partition;
-
+struct mtd_part_parser_data;
 /**
  * struct flash_platform_data: board-specific flash data
  * @name: optional flash device name (eg, as used with mtdparts=)
@@ -10,6 +10,8 @@ struct mtd_partition;
  * @nr_parts: number of mtd_partitions for static partitoning
  * @type: optional flash device type (e.g. m25p80 vs m25p64), for use
  *	with chips that can't be queried for JEDEC or other IDs
+ * @part_probe_types: optional list of MTD parser names to use for
+ *	partitioning
  *
  * Board init code (in arch/.../mach-xxx/board-yyy.c files) can
  * provide information about SPI flash parts (such as DataFlash) to
@@ -25,6 +27,7 @@ struct flash_platform_data {
 
 	char		*type;
 
+	const char	**part_probe_types;
 	/* we'll likely add more ... use JEDEC IDs, etc */
 };
 

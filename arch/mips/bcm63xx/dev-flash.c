@@ -16,9 +16,12 @@
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
 #include <linux/mtd/physmap.h>
+#include <linux/spi/spi.h>
+#include <linux/spi/flash.h>
 
 #include <bcm63xx_cpu.h>
 #include <bcm63xx_dev_flash.h>
+#include <bcm63xx_dev_hsspi.h>
 #include <bcm63xx_regs.h>
 #include <bcm63xx_io.h>
 
@@ -55,6 +58,21 @@ static struct platform_device mtd_dev = {
 	},
 };
 
+static struct flash_platform_data bcm63xx_flash_data = {
+	.part_probe_types	= bcm63xx_part_types,
+};
+
+static struct spi_board_info bcm63xx_spi_flash_info[] = {
+	{
+		.bus_num	= 0,
+		.chip_select	= 0,
+		.mode		= 0,
+		.max_speed_hz	= 781000,
+		.modalias	= "m25p80",
+		.platform_data	= &bcm63xx_flash_data,
+	},
+};
+
 static int __init bcm63xx_detect_flash_type(void)
 {
 	u32 val;
@@ -62,6 +80,11 @@ static int __init bcm63xx_detect_flash_type(void)
 	switch (bcm63xx_get_cpu_id()) {
 	case BCM6328_CPU_ID:
 		val = bcm_misc_readl(MISC_STRAPBUS_6328_REG);
+		if (val & STRAPBUS_6328_HSSPI_CLK_FAST)
+			bcm63xx_spi_flash_info[0].max_speed_hz = 33333334;
+		else
+			bcm63xx_spi_flash_info[0].max_speed_hz = 16666667;
+
 		if (val & STRAPBUS_6328_BOOT_SEL_SERIAL)
 			return BCM63XX_FLASH_TYPE_SERIAL;
 		else
@@ -79,6 +102,9 @@ static int __init bcm63xx_detect_flash_type(void)
 			return BCM63XX_FLASH_TYPE_SERIAL;
 	case BCM6368_CPU_ID:
 		val = bcm_gpio_readl(GPIO_STRAPBUS_REG);
+		if (val & STRAPBUS_6368_SPI_CLK_FAST)
+			bcm63xx_spi_flash_info[0].max_speed_hz = 20000000;
+
 		switch (val & STRAPBUS_6368_BOOT_SEL_MASK) {
 		case STRAPBUS_6368_BOOT_SEL_NAND:
 			return BCM63XX_FLASH_TYPE_NAND;
@@ -110,8 +136,11 @@ int __init bcm63xx_flash_register(void)
 
 		return platform_device_register(&mtd_dev);
 	case BCM63XX_FLASH_TYPE_SERIAL:
-		pr_warn("unsupported serial flash detected\n");
-		return -ENODEV;
+		if (BCMCPU_IS_6328())
+			bcm63xx_flash_data.max_transfer_len = HSSPI_BUFFER_LEN;
+
+		return spi_register_board_info(bcm63xx_spi_flash_info,
+					ARRAY_SIZE(bcm63xx_spi_flash_info));
 	case BCM63XX_FLASH_TYPE_NAND:
 		pr_warn("unsupported NAND flash detected\n");
 		return -ENODEV;

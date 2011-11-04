@@ -711,6 +711,72 @@ static struct board_info __initdata board_96368mvwg = {
 	.has_ohci0 = 1,
 	.has_ehci0 = 1,
 };
+
+static struct board_info __initdata board_96368mvngr = {
+	.name				= "96368MVNgr",
+	.expected_cpu_id		= 0x6368,
+
+	.has_uart0			= 1,
+	.has_pci			= 1,
+	.has_enetsw			= 1,
+
+	.enetsw = {
+		.used_ports = {
+			[0] = {
+				.used	= 1,
+				.phy_id	= 1,
+				.name	= "port1",
+			},
+
+			[1] = {
+				.used	= 1,
+				.phy_id	= 2,
+				.name	= "port2",
+			},
+
+			[2] = {
+				.used	= 1,
+				.phy_id	= 3,
+				.name	= "port3",
+			},
+
+			[3] = {
+				.used	= 1,
+				.phy_id	= 4,
+				.name	= "port4",
+			},
+		},
+	},
+
+	.leds = {
+		{
+			.name		= "adsl",
+			.gpio		= 2,
+			.active_low	= 1,
+		},
+		{
+			.name		= "inet",
+			.gpio		= 5,
+		},
+		{
+			.name		= "power",
+			.gpio		= 22,
+			.default_trigger = "default-on",
+		},
+		{
+			.name		= "wps",
+			.gpio		= 23,
+			.active_low	= 1,
+		},
+		{
+			.name		= "inet-fail",
+			.gpio		= 3,
+		},
+	},
+
+	.has_ohci0 = 1,
+	.has_ehci0 = 1,
+};
 #endif
 
 /*
@@ -747,6 +813,7 @@ static const struct board_info __initdata *bcm963xx_boards[] = {
 
 #ifdef CONFIG_BCM63XX_CPU_6368
 	&board_96368mvwg,
+	&board_96368mvngr,
 #endif
 };
 

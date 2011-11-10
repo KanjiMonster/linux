@@ -93,6 +93,7 @@ struct m25p {
 	u16			addr_width;
 	u8			erase_opcode;
 	u8			*command;
+	int			max_transfer_len;
 };
 
 static inline struct m25p *mtd_to_m25p(struct mtd_info *mtd)
@@ -336,10 +337,9 @@ static int m25p80_erase(struct mtd_info *mtd, struct erase_info *instr)
  * Read an address range from the flash chip.  The address range
  * may be any size provided it is within the physical boundaries.
  */
-static int m25p80_read(struct mtd_info *mtd, loff_t from, size_t len,
+static int __m25p80_read(struct m25p *flash, loff_t from, size_t len,
 	size_t *retlen, u_char *buf)
 {
-	struct m25p *flash = mtd_to_m25p(mtd);
 	struct spi_transfer t[2];
 	struct spi_message m;
 
@@ -388,6 +388,28 @@ static int m25p80_read(struct mtd_info *mtd, loff_t from, size_t len,
 	return 0;
 }
 
+static int m25p80_read(struct mtd_info *mtd, loff_t from, size_t len,
+	size_t *retlen, u_char *buf)
+{
+	struct m25p *flash = mtd_to_m25p(mtd);
+	size_t off;
+	size_t read_len = flash->max_transfer_len;
+	size_t part_len;
+	int ret = 0;
+
+	if (!read_len)
+		return __m25p80_read(flash, from, len, retlen, buf);
+
+	*retlen = 0;
+
+	for (off = 0; off < len && !ret; off += read_len) {
+		ret = __m25p80_read(flash, from + off, min(len - off, read_len),
+				    &part_len, buf + off);
+			*retlen += part_len;
+	}
+
+	return ret;
+}
 /*
  * Write an address range to the flash chip.  Data must be written in
  * FLASH_PAGESIZE chunks.  The address range may be any size provided
@@ -863,6 +885,9 @@ static int __devinit m25p_probe(struct spi_device *spi)
 		kfree(flash);
 		return -ENOMEM;
 	}
+
+	if (data)
+		flash->max_transfer_len = data->max_transfer_len;
 
 	flash->spi = spi;
 	mutex_init(&flash->lock);

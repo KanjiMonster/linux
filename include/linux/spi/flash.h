@@ -13,6 +13,8 @@ struct mtd_part_parser_data;
  * @part_probe_types: optional list of MTD parser names to use for
  *	partitioning
  *
+ * @max_transfer_len: option maximum read/write length limitation for
+ *	SPI controllers not able to transfer any length commands.
  * Board init code (in arch/.../mach-xxx/board-yyy.c files) can
  * provide information about SPI flash parts (such as DataFlash) to
  * help set up the device and its appropriate default partitioning.
@@ -28,6 +30,8 @@ struct flash_platform_data {
 	char		*type;
 
 	const char	**part_probe_types;
+
+	unsigned int	max_transfer_len;
 	/* we'll likely add more ... use JEDEC IDs, etc */
 };
 

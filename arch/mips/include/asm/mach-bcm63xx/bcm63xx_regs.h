@@ -1387,4 +1387,51 @@
 
 #define PCIE_DEVICE_OFFSET		0x8000
 
+/*************************************************************************
+ * _REG relative to RSET_HSSPI
+ *************************************************************************/
+
+#define HSSPI_GLOBAL_CTRL_REG			0x0
+#define GLOBAL_CTRL_CLK_POLARITY		(1 << 17)
+#define GLOBAL_CTRL_CLK_GATE_SSOFF		(1 << 16)
+
+#define HSSPI_GLOBAL_EXT_TRIGGER_REG		0x4
+
+#define HSSPI_INT_STATUS_REG			0x8
+#define HSSPI_INT_STATUS_MASKED_REG		0xc
+#define HSSPI_INT_MASK_REG			0x10
+
+#define HSSPI_PING0_CMD_DONE			(1 << 0)
+
+#define HSSPI_INT_CLEAR_ALL			0xff001f1f
+
+#define HSSPI_PINGPONG_COMMAND_REG(x)		(0x80 + (x) * 0x40)
+#define PINGPONG_CMD_COMMAND_MASK		0xf
+#define PINGPONG_COMMAND_NOOP			0
+#define PINGPONG_COMMAND_START_NOW		1
+#define PINGPONG_COMMAND_START_TRIGGER		2
+#define PINGPONG_COMMAND_HALT			3
+#define PINGPONG_COMMAND_FLUSH			4
+#define PINGPONG_CMD_PROFILE_SHIFT		8
+#define PINGPONG_CMD_SS_SHIFT			12
+
+#define HSSPI_PINGPONG_STATUS_REG(x)		(0x84 + (x) * 0x40)
+
+#define HSSPI_PROFILE_CLK_CTRL_REG(x)		(0x100 + (x) * 0x20)
+#define CLK_CTRL_ACCUM_RST_ON_LOOP		(1 << 15)
+
+#define HSSPI_PROFILE_SIGNAL_CTRL_REG(x)	(0x104 + (x) * 0x20)
+#define SIGNAL_CTRL_LATCH_RISING		(1 << 12)
+#define SIGNAL_CTRL_LAUNCH_RISING		(1 << 13)
+#define SIGNAL_CTRL_ASYNC_INPUT_PATH		(1 << 16)
+
+#define HSSPI_PROFILE_MODE_CTRL_REG(x)		(0x108 + (x) * 0x20)
+#define MODE_CTRL_MULTIDATA_RD_STRT_SHIFT	8
+#define MODE_CTRL_MULTIDATA_WR_STRT_SHIFT	12
+#define MODE_CTRL_MULTIDATA_RD_SIZE_SHIFT	16
+#define MODE_CTRL_MULTIDATA_WR_SIZE_SHIFT	18
+#define MODE_CTRL_PREPENDBYTE_CNT_SHIFT		24
+
+#define HSSPI_FIFO_REG(x)			(0x200 + (x) * 0x200)
+
 #endif /* BCM63XX_REGS_H_ */

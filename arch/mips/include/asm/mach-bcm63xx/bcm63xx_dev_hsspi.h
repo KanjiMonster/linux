@@ -17,4 +17,6 @@ struct bcm63xx_hsspi_pdata {
 
 #define HSSPI_PLL_HZ_6328	133333333
 
+#define HSSPI_BUFFER_LEN	512
+
 #endif /* BCM63XX_DEV_HSSPI_H */

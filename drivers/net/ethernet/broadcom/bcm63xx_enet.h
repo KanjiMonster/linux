@@ -18,6 +18,7 @@
 
 /* maximum burst len for dma (4 bytes unit) */
 #define BCMENET_DMA_MAXBURST	16
+#define BCMENETSW_DMA_MAXBURST	8
 
 /* tx transmit threshold (4 bytes unit), fifo is 256 bytes, the value
  * must be low enough so that a DMA transfer of above burst length can
@@ -251,6 +252,9 @@ struct bcm_enet_priv {
 
 	/* number of dma desc in tx ring */
 	int tx_ring_size;
+
+	/* maximum dma burst size */
+	int dma_maxburst;
 
 	/* cpu view of rx dma ring */
 	struct bcm_enet_desc *tx_desc_cpu;

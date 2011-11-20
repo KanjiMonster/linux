@@ -16,6 +16,7 @@ struct bcm63xx_hsspi_pdata {
 #define bcm_hsspi_writel(v, o)	bcm_rset_writel(RSET_HSSPI, (v), (o))
 
 #define HSSPI_PLL_HZ_6328	133333333
+#define HSSPI_PLL_HZ		400000000
 
 #define HSSPI_BUFFER_LEN	512
 

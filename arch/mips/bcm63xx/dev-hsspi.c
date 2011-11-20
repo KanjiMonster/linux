@@ -43,7 +43,7 @@ static struct platform_device bcm63xx_hsspi_device = {
 int __init bcm63xx_hsspi_register(void)
 {
 
-	if (!BCMCPU_IS_6328())
+	if (!BCMCPU_IS_6328() && !BCMCPU_IS_6362())
 		return -ENODEV;
 
 	spi_resources[0].start = bcm63xx_regset_address(RSET_HSSPI);
@@ -51,7 +51,10 @@ int __init bcm63xx_hsspi_register(void)
 	spi_resources[0].end += RSET_HSSPI_SIZE - 1;
 	spi_resources[1].start = bcm63xx_get_irq_number(IRQ_HSSPI);
 
-	spi_pdata.speed_hz = HSSPI_PLL_HZ_6328;
+	if (BCMCPU_IS_6328())
+		spi_pdata.speed_hz = HSSPI_PLL_HZ_6328;
+	else
+		spi_pdata.speed_hz = HSSPI_PLL_HZ;
 
 	return platform_device_register(&bcm63xx_hsspi_device);
 }

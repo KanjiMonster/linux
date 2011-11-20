@@ -118,35 +118,61 @@ void __iomem *pci_iospace_start;
 static void __init bcm63xx_reset_pcie(void)
 {
 	u32 val;
+	u32 reg;
+	u32 mask;
 
 	/* enable clock */
+
+	if (BCMCPU_IS_6328())
+		mask = CKCTL_6328_PCIE_EN;
+	else
+		mask = CKCTL_6362_PCIE_EN;
+
 	val = bcm_perf_readl(PERF_CKCTL_REG);
-	val |= CKCTL_6328_PCIE_EN;
+	val |= mask;
 	bcm_perf_writel(val, PERF_CKCTL_REG);
 
 	/* enable SERDES */
-	val = bcm_misc_readl(MISC_SERDES_CTRL_REG);
+
+	if (BCMCPU_IS_6328())
+		reg = MISC_SERDES_CTRL_6328_REG;
+	else
+		reg = MISC_SERDES_CTRL_6362_REG;
+
+	val = bcm_misc_readl(reg);
 	val |= SERDES_PCIE_EN | SERDES_PCIE_EXD_EN;
-	bcm_misc_writel(val, MISC_SERDES_CTRL_REG);
+	bcm_misc_writel(val, reg);
 
 	/* reset the PCIe core */
-	val = bcm_perf_readl(PERF_SOFTRESET_6328_REG);
+	if (BCMCPU_IS_6328()) {
+		reg = PERF_SOFTRESET_6328_REG;
+		mask = SOFTRESET_6328_PCIE_MASK | SOFTRESET_6328_PCIE_CORE_MASK
+				| SOFTRESET_6328_PCIE_HARD_MASK;
+	} else {
+		reg = PERF_SOFTRESET_6362_REG;
+		mask = SOFTRESET_6362_PCIE_MASK | SOFTRESET_6362_PCIE_CORE_MASK;
+	}
+	val = bcm_perf_readl(reg);
+	val &= ~mask;
 
-	val &= ~SOFTRESET_6328_PCIE_MASK;
-	val &= ~SOFTRESET_6328_PCIE_CORE_MASK;
-	val &= ~SOFTRESET_6328_PCIE_HARD_MASK;
-	val &= ~SOFTRESET_6328_PCIE_EXT_MASK;
-	bcm_perf_writel(val, PERF_SOFTRESET_6328_REG);
+	if (BCMCPU_IS_6328())
+		val &= ~SOFTRESET_6328_PCIE_EXT_MASK;
+	else
+		val &= ~SOFTRESET_6362_PCIE_EXT_MASK;
+
+	bcm_perf_writel(val, reg);
 	mdelay(10);
 
-	val |= SOFTRESET_6328_PCIE_MASK;
-	val |= SOFTRESET_6328_PCIE_CORE_MASK;
-	val |= SOFTRESET_6328_PCIE_HARD_MASK;
-	bcm_perf_writel(val, PERF_SOFTRESET_6328_REG);
+	val |= mask;
+	bcm_perf_writel(val, reg);
 	mdelay(10);
 
-	val |= SOFTRESET_6328_PCIE_EXT_MASK;
-	bcm_perf_writel(val, PERF_SOFTRESET_6328_REG);
+	if (BCMCPU_IS_6328())
+		val |= SOFTRESET_6328_PCIE_EXT_MASK;
+	else
+		val |= SOFTRESET_6362_PCIE_EXT_MASK;
+
+	bcm_perf_writel(val, reg);
 	mdelay(200);
 }
 
@@ -332,6 +358,7 @@ static int __init bcm63xx_pci_init(void)
 
 	switch (bcm63xx_get_cpu_id()) {
 	case BCM6328_CPU_ID:
+	case BCM6362_CPU_ID:
 		return bcm63xx_register_pcie();
 	case BCM6348_CPU_ID:
 	case BCM6358_CPU_ID:

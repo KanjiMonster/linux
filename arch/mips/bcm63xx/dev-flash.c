@@ -100,6 +100,17 @@ static int __init bcm63xx_detect_flash_type(void)
 			return BCM63XX_FLASH_TYPE_PARALLEL;
 		else
 			return BCM63XX_FLASH_TYPE_SERIAL;
+	case BCM6362_CPU_ID:
+		val = bcm_misc_readl(MISC_STRAPBUS_6362_REG);
+		if (val & STRAPBUS_6362_HSSPI_CLK_FAST)
+			bcm63xx_spi_flash_info[0].max_speed_hz = 50000000;
+		else
+			bcm63xx_spi_flash_info[0].max_speed_hz = 20000000;
+
+		if (val & STRAPBUS_6362_BOOT_SEL_SERIAL)
+			return BCM63XX_FLASH_TYPE_SERIAL;
+		else
+			return BCM63XX_FLASH_TYPE_NAND;
 	case BCM6368_CPU_ID:
 		val = bcm_gpio_readl(GPIO_STRAPBUS_REG);
 		if (val & STRAPBUS_6368_SPI_CLK_FAST)
@@ -136,7 +147,7 @@ int __init bcm63xx_flash_register(void)
 
 		return platform_device_register(&mtd_dev);
 	case BCM63XX_FLASH_TYPE_SERIAL:
-		if (BCMCPU_IS_6328())
+		if (BCMCPU_IS_6328() || BCMCPU_IS_6362())
 			bcm63xx_flash_data.max_transfer_len = HSSPI_BUFFER_LEN;
 
 		return spi_register_board_info(bcm63xx_spi_flash_info,

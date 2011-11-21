@@ -734,6 +734,32 @@ static struct board_info __initdata board_DWVS0 = {
 };
 #endif
 
+#ifdef CONFIG_BCM63XX_CPU_6362
+static struct board_info __initdata board_nb6_ser_r2 = {
+	.name				= "NB6-SER-r2",
+	.expected_cpu_id		= 0x6362,
+
+	.has_uart0			= 1,
+
+	.has_enetsw			= 1,
+
+	.enetsw = {
+		.used_ports = {
+			[4] = {
+				.used			= 1,
+				.phy_id			= 0,
+
+				.bypass_link		= 1,
+				.force_speed		= 1000,
+				.force_duplex_full	= 1,
+
+				.name			= "rtl8367",
+			},
+		},
+	},
+};
+#endif
+
 /*
  * known 6368 boards
  */
@@ -948,6 +974,10 @@ static const struct board_info __initdata *bcm963xx_boards[] = {
 	&board_96358vw2,
 	&board_AGPFS0,
 	&board_DWVS0,
+#endif
+
+#ifdef CONFIG_BCM63XX_CPU_6362
+	&board_nb6_ser_r2,
 #endif
 
 #ifdef CONFIG_BCM63XX_CPU_6368

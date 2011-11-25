@@ -2043,7 +2043,7 @@ static void bcmenet_sw_mdio_write(struct bcm_enet_priv *priv,
 static void swphy_poll_timer(unsigned long data)
 {
 	struct bcm_enet_priv *priv = (struct bcm_enet_priv *)data;
-	unsigned int i;
+	unsigned int i, all_down = 1, changed = 0;
 
 	for (i = 0; i < priv->num_ports; i++) {
 		struct bcm63xx_enetsw_port *port;
@@ -2055,8 +2055,10 @@ static void swphy_poll_timer(unsigned long data)
 		if (!port->used)
 			continue;
 
-		if (port->bypass_link)
+		if (port->bypass_link) {
+			all_down = 0;
 			continue;
+		}
 
 		/* dummy read to clear */
 		for (j = 0; j < 2; j++)
@@ -2067,8 +2069,11 @@ static void swphy_poll_timer(unsigned long data)
 			continue;
 
 		up = (val & BMSR_LSTATUS) ? 1 : 0;
+		if (up)
+			all_down = 0;
 		if (!(up ^ priv->sw_port_link[i]))
 			continue;
+		changed = 1;
 
 		priv->sw_port_link[i] = up;
 
@@ -2124,6 +2129,13 @@ static void swphy_poll_timer(unsigned long data)
 
 		enetsw_writeb(priv, override, ENETSW_PORTOV_REG(i));
 		enetsw_writeb(priv, 0, ENETSW_PTCTRL_REG(i));
+	}
+
+	if (changed) {
+		if (all_down)
+			netif_carrier_off(priv->net_dev);
+		else
+			netif_carrier_on(priv->net_dev);
 	}
 
 	priv->swphy_poll.expires = jiffies + HZ;
@@ -2221,7 +2233,8 @@ static int bcm_enetsw_open(struct net_device *dev)
 			      ENETSW_PTCTRL_TXDIS_MASK,
 			      ENETSW_PTCTRL_REG(i));
 
-		priv->sw_port_link[i] = 0;
+		/* set state to "unknown" */
+		priv->sw_port_link[i] = -1;
 	}
 
 	/* enable external ports */
@@ -2717,6 +2730,7 @@ static struct ethtool_ops bcm_enetsw_ethtool_ops = {
 	.get_sset_count		= bcm_enetsw_get_sset_count,
 	.get_ethtool_stats      = bcm_enetsw_get_ethtool_stats,
 	.get_drvinfo		= bcm_enetsw_get_drvinfo,
+	.get_link		= ethtool_op_get_link,
 	.get_ringparam		= bcm_enetsw_get_ringparam,
 	.set_ringparam		= bcm_enetsw_set_ringparam,
 };

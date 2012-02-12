@@ -39,7 +39,8 @@ static struct platform_device bcm63xx_ehci_device = {
 
 int __init bcm63xx_ehci_register(void)
 {
-	if (!BCMCPU_IS_6328() && !BCMCPU_IS_6358() && !BCMCPU_IS_6368())
+	if (!BCMCPU_IS_6328() && !BCMCPU_IS_6358() && !BCMCPU_IS_6362() &&
+	    !BCMCPU_IS_6368())
 		return 0;
 
 	ehci_resources[0].start = bcm63xx_regset_address(RSET_EHCI0);

@@ -99,7 +99,7 @@ static int __devinit ehci_hcd_bcm63xx_drv_probe(struct platform_device *pdev)
 		bcm_rset_writel(RSET_USBH_PRIV, 0x1c0020,
 				USBH_PRIV_TEST_6358_REG);
 
-	} else if (BCMCPU_IS_6328() || BCMCPU_IS_6368()) {
+	} else if (BCMCPU_IS_6328() || BCMCPU_IS_6362() || BCMCPU_IS_6368()) {
 
 		reg = bcm_rset_readl(RSET_USBH_PRIV, USBH_PRIV_SWAP_6368_REG);
 		reg &= ~USBH_PRIV_SWAP_EHCI_DATA_MASK;

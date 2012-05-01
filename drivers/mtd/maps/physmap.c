@@ -100,6 +100,7 @@ static int physmap_flash_probe(struct platform_device *dev)
 {
 	struct physmap_flash_data *physmap_data;
 	struct physmap_flash_info *info;
+	struct mtd_part_parser_data *pp_data;
 	const char **probe_type;
 	const char **part_types;
 	int err = 0;
@@ -191,8 +192,9 @@ static int physmap_flash_probe(struct platform_device *dev)
 	spin_lock_init(&info->vpp_lock);
 
 	part_types = physmap_data->part_probe_types ? : part_probe_types;
+	pp_data = physmap_data->pp_data ? physmap_data->pp_data : NULL;
 
-	mtd_device_parse_register(info->cmtd, part_types, NULL,
+	mtd_device_parse_register(info->cmtd, part_types, pp_data,
 				  physmap_data->parts, physmap_data->nr_parts);
 	return 0;
 

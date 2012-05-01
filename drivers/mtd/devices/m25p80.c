@@ -854,6 +854,9 @@ static int __devinit m25p_probe(struct spi_device *spi)
 			dev_warn(&spi->dev, "unrecognized id %s\n", data->type);
 	}
 
+	if (data && data->pp_data)
+		memcpy(&ppdata, data->pp_data, sizeof(ppdata));
+
 	info = (void *)id->driver_data;
 
 	if (info->jedec_id) {

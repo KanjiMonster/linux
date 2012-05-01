@@ -12,6 +12,7 @@ struct mtd_part_parser_data;
  *	with chips that can't be queried for JEDEC or other IDs
  * @part_probe_types: optional list of MTD parser names to use for
  *	partitioning
+ * @pp_data: optional partition parser data.
  *
  * @max_transfer_len: option maximum read/write length limitation for
  *	SPI controllers not able to transfer any length commands.
@@ -30,6 +31,7 @@ struct flash_platform_data {
 	char		*type;
 
 	const char	**part_probe_types;
+	struct mtd_part_parser_data *pp_data;
 
 	unsigned int	max_transfer_len;
 	/* we'll likely add more ... use JEDEC IDs, etc */

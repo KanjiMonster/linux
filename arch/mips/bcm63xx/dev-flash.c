@@ -25,6 +25,8 @@
 #include <bcm63xx_regs.h>
 #include <bcm63xx_io.h>
 
+int bcm63xx_attached_flash = -1;
+
 static struct mtd_partition mtd_partitions[] = {
 	{
 		.name		= "cfe",
@@ -86,20 +88,23 @@ static int __init bcm63xx_detect_flash_type(void)
 			bcm63xx_spi_flash_info[0].max_speed_hz = 16666667;
 
 		if (val & STRAPBUS_6328_BOOT_SEL_SERIAL)
-			return BCM63XX_FLASH_TYPE_SERIAL;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_SERIAL;
 		else
-			return BCM63XX_FLASH_TYPE_NAND;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_NAND;
+		break;
 	case BCM6338_CPU_ID:
 	case BCM6345_CPU_ID:
 	case BCM6348_CPU_ID:
 		/* no way to auto detect so assume parallel */
-		return BCM63XX_FLASH_TYPE_PARALLEL;
+		bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_PARALLEL;
+		break;
 	case BCM6358_CPU_ID:
 		val = bcm_gpio_readl(GPIO_STRAPBUS_REG);
 		if (val & STRAPBUS_6358_BOOT_SEL_PARALLEL)
-			return BCM63XX_FLASH_TYPE_PARALLEL;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_PARALLEL;
 		else
-			return BCM63XX_FLASH_TYPE_SERIAL;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_SERIAL;
+		break;
 	case BCM6362_CPU_ID:
 		val = bcm_misc_readl(MISC_STRAPBUS_6362_REG);
 		if (val & STRAPBUS_6362_HSSPI_CLK_FAST)
@@ -108,9 +113,10 @@ static int __init bcm63xx_detect_flash_type(void)
 			bcm63xx_spi_flash_info[0].max_speed_hz = 20000000;
 
 		if (val & STRAPBUS_6362_BOOT_SEL_SERIAL)
-			return BCM63XX_FLASH_TYPE_SERIAL;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_SERIAL;
 		else
-			return BCM63XX_FLASH_TYPE_NAND;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_NAND;
+		break;
 	case BCM6368_CPU_ID:
 	case BCM6369_CPU_ID:
 		val = bcm_gpio_readl(GPIO_STRAPBUS_REG);
@@ -119,12 +125,18 @@ static int __init bcm63xx_detect_flash_type(void)
 
 		switch (val & STRAPBUS_6368_BOOT_SEL_MASK) {
 		case STRAPBUS_6368_BOOT_SEL_NAND:
-			return BCM63XX_FLASH_TYPE_NAND;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_NAND;
+			break;
 		case STRAPBUS_6368_BOOT_SEL_SERIAL:
-			return BCM63XX_FLASH_TYPE_SERIAL;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_SERIAL;
+			break;
 		case STRAPBUS_6368_BOOT_SEL_PARALLEL:
-			return BCM63XX_FLASH_TYPE_PARALLEL;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_PARALLEL;
+			break;
+		default:
+			return -EINVAL;
 		}
+		break;
 	case BCM63168_CPU_ID:
 	case BCM63268_CPU_ID:
 		val = bcm_misc_readl(MISC_STRAPBUS_63268_REG);
@@ -134,23 +146,25 @@ static int __init bcm63xx_detect_flash_type(void)
 			bcm63xx_spi_flash_info[0].max_speed_hz = 20000000;
 
 		if (val & STRAPBUS_63268_BOOT_SEL_SERIAL)
-			return BCM63XX_FLASH_TYPE_SERIAL;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_SERIAL;
 		else
-			return BCM63XX_FLASH_TYPE_NAND;
+			bcm63xx_attached_flash = BCM63XX_FLASH_TYPE_NAND;
 		break;
 	default:
 		return -EINVAL;
 	}
+
+	return 0;
 }
 
 int __init bcm63xx_flash_register(void)
 {
-	int flash_type;
 	u32 val;
 
-	flash_type = bcm63xx_detect_flash_type();
 
-	switch (flash_type) {
+	bcm63xx_detect_flash_type();
+
+	switch (bcm63xx_attached_flash) {
 	case BCM63XX_FLASH_TYPE_PARALLEL:
 		/* read base address of boot chip select (0) */
 		val = bcm_mpi_readl(MPI_CSBASE_REG(0));
@@ -171,7 +185,7 @@ int __init bcm63xx_flash_register(void)
 		return -ENODEV;
 	default:
 		pr_err("flash detection failed for BCM%x: %d\n",
-		       bcm63xx_get_cpu_id(), flash_type);
+		       bcm63xx_get_cpu_id(), bcm63xx_attached_flash);
 		return -ENODEV;
 	}
 }

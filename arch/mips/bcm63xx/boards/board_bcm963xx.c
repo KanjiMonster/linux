@@ -18,6 +18,7 @@
 #include <bcm63xx_dev_uart.h>
 #include <bcm63xx_regs.h>
 #include <bcm63xx_io.h>
+#include <bcm63xx_nvram.h>
 #include <bcm63xx_dev_pci.h>
 #include <bcm63xx_dev_enet.h>
 #include <bcm63xx_dev_dsp.h>
@@ -32,8 +33,6 @@
 
 #define PFX	"board_bcm963xx: "
 
-static struct bcm963xx_nvram nvram;
-static unsigned int mac_addr_used;
 static struct board_info board;
 
 /*
@@ -961,48 +960,14 @@ const char *board_get_name(void)
 }
 
 /*
- * register & return a new board mac address
- */
-static int board_get_mac_address(u8 *mac)
-{
-	u8 *p;
-	int count;
-
-	if (mac_addr_used >= nvram.mac_addr_count) {
-		printk(KERN_ERR PFX "not enough mac address\n");
-		return -ENODEV;
-	}
-
-	memcpy(mac, nvram.mac_addr_base, ETH_ALEN);
-	p = mac + ETH_ALEN - 1;
-	count = mac_addr_used;
-
-	while (count--) {
-		do {
-			(*p)++;
-			if (*p != 0)
-				break;
-			p--;
-		} while (p != mac);
-	}
-
-	if (p == mac) {
-		printk(KERN_ERR PFX "unable to fetch mac address\n");
-		return -ENODEV;
-	}
-
-	mac_addr_used++;
-	return 0;
-}
-
-/*
  * early init callback, read nvram data from flash and checksum it
  */
 void __init board_prom_init(void)
 {
-	unsigned int check_len, i;
-	u8 *boot_addr, *cfe, *p;
+	unsigned int i;
+	u8 *boot_addr, *cfe;
 	char cfe_version[32];
+	char *board_name;
 	u32 val;
 
 	/* read base address of boot chip select (0)
@@ -1025,27 +990,14 @@ void __init board_prom_init(void)
 		strcpy(cfe_version, "unknown");
 	printk(KERN_INFO PFX "CFE version: %s\n", cfe_version);
 
-	/* extract nvram data */
-	memcpy(&nvram, boot_addr + BCM963XX_NVRAM_OFFSET, sizeof(nvram));
-
-	/* check checksum before using data */
-	if (nvram.version <= 4)
-		check_len = offsetof(struct bcm963xx_nvram, checksum_old);
-	else
-		check_len = sizeof(nvram);
-	val = 0;
-	p = (u8 *)&nvram;
-	while (check_len--)
-		val += *p;
-	if (val) {
-		printk(KERN_ERR PFX "invalid nvram checksum\n");
+	if (bcm63xx_nvram_init(boot_addr + BCM963XX_NVRAM_OFFSET))
 		return;
-	}
 
+	board_name = bcm63xx_nvram_get_name();
 	/* find board by name */
 	for (i = 0; i < ARRAY_SIZE(bcm963xx_boards); i++) {
-		if (strncmp(nvram.name, bcm963xx_boards[i]->name,
-			    sizeof(nvram.name)))
+		if (strncmp(board_name, bcm963xx_boards[i]->name,
+			    BCM63XX_NVRAM_NAMELEN))
 			continue;
 		/* copy, board desc array is marked initdata */
 		memcpy(&board, bcm963xx_boards[i], sizeof(board));
@@ -1055,7 +1007,7 @@ void __init board_prom_init(void)
 	/* bail out if board is not found, will complain later */
 	if (!board.name[0]) {
 		char name[17];
-		memcpy(name, nvram.name, 16);
+		memcpy(name, board_name, 16);
 		name[16] = 0;
 		printk(KERN_ERR PFX "unknown bcm963xx board: %s\n",
 		       name);
@@ -1146,15 +1098,15 @@ int __init board_register_devices(void)
 		bcm63xx_pcmcia_register();
 
 	if (board.has_enet0 &&
-	    !board_get_mac_address(board.enet0.mac_addr))
+	    !bcm63xx_nvram_get_mac_address(board.enet0.mac_addr))
 		bcm63xx_enet_register(0, &board.enet0);
 
 	if (board.has_enet1 &&
-	    !board_get_mac_address(board.enet1.mac_addr))
+	    !bcm63xx_nvram_get_mac_address(board.enet1.mac_addr))
 		bcm63xx_enet_register(1, &board.enet1);
 
 	if (board.has_enetsw &&
-	    !board_get_mac_address(board.enetsw.mac_addr))
+	    !bcm63xx_nvram_get_mac_address(board.enetsw.mac_addr))
 		bcm63xx_enetsw_register(&board.enetsw);
 
 	if (board.has_usbd)
@@ -1173,7 +1125,7 @@ int __init board_register_devices(void)
 	 * do this after registering enet devices
 	 */
 #ifdef CONFIG_SSB_PCIHOST
-	if (!board_get_mac_address(bcm63xx_sprom.il0mac)) {
+	if (!bcm63xx_nvram_get_mac_address(bcm63xx_sprom.il0mac)) {
 		memcpy(bcm63xx_sprom.et0mac, bcm63xx_sprom.il0mac, ETH_ALEN);
 		memcpy(bcm63xx_sprom.et1mac, bcm63xx_sprom.il0mac, ETH_ALEN);
 		if (ssb_arch_register_fallback_sprom(

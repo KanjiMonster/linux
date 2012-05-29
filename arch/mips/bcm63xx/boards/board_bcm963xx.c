@@ -109,6 +109,75 @@ static struct board_info __initdata board_96328avng = {
 		},
 	},
 };
+
+static struct board_info __initdata board_963281TAN = {
+	.name				= "963281TAN",
+	.expected_cpu_id		= 0x6328,
+
+	.has_uart0			= 1,
+	.has_pci			= 1,
+	.has_enetsw			= 1,
+
+	.enetsw = {
+		.used_ports = {
+			[0] = {
+				.used	= 1,
+				.phy_id = 1,
+				.name	= "Port 1",
+			},
+			[1] = {
+				.used	= 1,
+				.phy_id	= 2,
+				.name	= "Port 2",
+			},
+			[2] = {
+				.used	= 1,
+				.phy_id	= 3,
+				.name	= "Port 3",
+			},
+			[3] = {
+				.used	= 1,
+				.phy_id	= 4,
+				.name	= "Port 4",
+			},
+		},
+	},
+
+	.leds = {
+		{
+			.name		= "963281TAN::internet",
+			.gpio		= 1,
+			.active_low	= 1,
+		},
+		{
+			.name		= "963281TAN::power",
+			.gpio		= 4,
+			.active_low	= 1,
+			.default_trigger = "default-on",
+		},
+		{
+			.name		= "963281TAN::internet-fail",
+			.gpio		= 7,
+			.active_low	= 1,
+		},
+		{
+			.name		= "963281TAN::power-fail",
+			.gpio		= 8,
+			.active_low	= 1,
+		},
+		{
+			.name		= "963281TAN::wps",
+			.gpio		= 9,
+			.active_low	= 1,
+		},
+		{
+			.name		= "963281TAN::dsl",
+			.gpio		= 11,
+			.active_low	= 1,
+		},
+
+	},
+};
 #endif
 
 /*
@@ -812,6 +881,7 @@ static struct board_info __initdata board_96368mvngr = {
 static const struct board_info __initdata *bcm963xx_boards[] = {
 #ifdef CONFIG_BCM63XX_CPU_6328
 	&board_96328avng,
+	&board_963281TAN,
 #endif
 #ifdef CONFIG_BCM63XX_CPU_6338
 	&board_96338gw,

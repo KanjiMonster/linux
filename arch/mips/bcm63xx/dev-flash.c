@@ -112,6 +112,7 @@ static int __init bcm63xx_detect_flash_type(void)
 		else
 			return BCM63XX_FLASH_TYPE_NAND;
 	case BCM6368_CPU_ID:
+	case BCM6369_CPU_ID:
 		val = bcm_gpio_readl(GPIO_STRAPBUS_REG);
 		if (val & STRAPBUS_6368_SPI_CLK_FAST)
 			bcm63xx_spi_flash_info[0].max_speed_hz = 20000000;

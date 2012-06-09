@@ -215,6 +215,7 @@ static unsigned int detect_cpu_clock(void)
 		}
 	}
 	case BCM6368_CPU_ID:
+	case BCM6369_CPU_ID:
 	{
 		unsigned int tmp, p1, p2, ndiv, m1;
 
@@ -332,6 +333,11 @@ void __init bcm63xx_cpu_init(void)
 				break;
 			case BCM6368_CPU_ID:
 				expected_cpu_id = BCM6368_CPU_ID;
+				bcm63xx_regs_base = bcm6368_regs_base;
+				bcm63xx_irqs = bcm6368_irqs;
+				break;
+			case BCM6369_CPU_ID:
+				expected_cpu_id = BCM6369_CPU_ID;
 				bcm63xx_regs_base = bcm6368_regs_base;
 				bcm63xx_irqs = bcm6368_irqs;
 				break;

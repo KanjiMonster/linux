@@ -189,6 +189,7 @@ static void bcm63xx_init_irq(void)
 		ext_irq_cfg_reg1 = PERF_EXTIRQ_CFG_REG_6362;
 		break;
 	case BCM6368_CPU_ID:
+	case BCM6369_CPU_ID:
 		irq_stat_addr += PERF_IRQSTAT_6368_REG;
 		irq_mask_addr += PERF_IRQMASK_6368_REG;
 		irq_bits = 64;
@@ -478,6 +479,7 @@ static int bcm63xx_external_irq_set_type(struct irq_data *d,
 	case BCM6358_CPU_ID:
 	case BCM6362_CPU_ID:
 	case BCM6368_CPU_ID:
+	case BCM6369_CPU_ID:
 		if (levelsense)
 			reg |= EXTIRQ_CFG_LEVELSENSE(irq);
 		else

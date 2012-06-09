@@ -16,6 +16,7 @@
 #define BCM6358_CPU_ID		0x6358
 #define BCM6362_CPU_ID		0x6362
 #define BCM6368_CPU_ID		0x6368
+#define BCM6369_CPU_ID		0x6369
 
 void __init bcm63xx_cpu_init(void);
 u16 __bcm63xx_get_cpu_id(void);
@@ -109,7 +110,7 @@ unsigned int bcm63xx_get_cpu_freq(void);
 # else
 #  define bcm63xx_get_cpu_id()	BCM6368_CPU_ID
 # endif
-# define BCMCPU_IS_6368()	(bcm63xx_get_cpu_id() == BCM6368_CPU_ID)
+# define BCMCPU_IS_6368()	(bcm63xx_get_cpu_id() == BCM6368_CPU_ID  || bcm63xx_get_cpu_id() == BCM6369_CPU_ID)
 #else
 # define BCMCPU_IS_6368()	(0)
 #endif

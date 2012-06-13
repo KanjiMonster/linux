@@ -53,6 +53,33 @@ static struct board_info __initdata board_96328avng = {
 		.port_no		= 0,
 	},
 
+	.has_enetsw			= 1,
+
+	.enetsw = {
+		.used_ports = {
+			[0] = {
+				.used	= 1,
+				.phy_id = 1,
+				.name	= "Port 1",
+			},
+			[1] = {
+				.used	= 1,
+				.phy_id	= 2,
+				.name	= "Port 2",
+			},
+			[2] = {
+				.used	= 1,
+				.phy_id	= 3,
+				.name	= "Port 3",
+			},
+			[3] = {
+				.used	= 1,
+				.phy_id	= 4,
+				.name	= "Port 4",
+			},
+		},
+	},
+
 	.leds = {
 		{
 			.name		= "96328avng::ppp-fail",

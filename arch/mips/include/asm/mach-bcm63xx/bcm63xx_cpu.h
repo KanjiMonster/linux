@@ -19,7 +19,7 @@
 #define BCM6369_CPU_ID		0x6369
 
 void __init bcm63xx_cpu_init(void);
-u16 __bcm63xx_get_cpu_id(void);
+u32 __bcm63xx_get_cpu_id(void);
 u8 bcm63xx_get_cpu_rev(void);
 unsigned int bcm63xx_get_cpu_freq(void);
 

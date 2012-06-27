@@ -286,62 +286,38 @@ static unsigned int detect_memory_size(void)
 
 void __init bcm63xx_cpu_init(void)
 {
-	unsigned int tmp, expected_cpu_id;
+	unsigned int tmp;
 	struct cpuinfo_mips *c = &current_cpu_data;
 	unsigned int cpu = smp_processor_id();
+	u32 chipid_reg, chipid_mask;
+	unsigned int chipid_shift;
 
 	/* soc registers location depends on cpu type */
-	expected_cpu_id = 0;
+	chipid_reg = 0;
 
 	switch (c->cputype) {
 	case CPU_BMIPS3300:
-		if ((read_c0_prid() & 0xff00) == PRID_IMP_BMIPS3300_ALT) {
-			expected_cpu_id = BCM6348_CPU_ID;
-			bcm63xx_regs_base = bcm6348_regs_base;
-			bcm63xx_irqs = bcm6348_irqs;
-		} else {
+		if ((read_c0_prid() & 0xff00) != PRID_IMP_BMIPS3300_ALT)
 			__cpu_name[cpu] = "Broadcom BCM6338";
-			expected_cpu_id = BCM6338_CPU_ID;
-			bcm63xx_regs_base = bcm6338_regs_base;
-			bcm63xx_irqs = bcm6338_irqs;
-		}
-		break;
 	case CPU_BMIPS32:
-		expected_cpu_id = BCM6345_CPU_ID;
-		bcm63xx_regs_base = bcm6345_regs_base;
-		bcm63xx_irqs = bcm6345_irqs;
+		chipid_reg = BCM_6345_PERF_BASE;
+		chipid_mask = 0xffff0000;
+		chipid_shift = 16;
 		break;
 	case CPU_BMIPS4350:
-		if ((read_c0_prid() & 0xf0) == 0x10) {
-			expected_cpu_id = BCM6358_CPU_ID;
-			bcm63xx_regs_base = bcm6358_regs_base;
-			bcm63xx_irqs = bcm6358_irqs;
-		} else {
-			/* all newer chips have the same chip id location */
-			u16 chip_id = bcm_readw(BCM_6368_PERF_BASE);
-
-			switch (chip_id) {
-			case BCM6328_CPU_ID:
-				expected_cpu_id = BCM6328_CPU_ID;
-				bcm63xx_regs_base = bcm6328_regs_base;
-				bcm63xx_irqs = bcm6328_irqs;
-				break;
-			case BCM6362_CPU_ID:
-				expected_cpu_id = BCM6362_CPU_ID;
-				bcm63xx_regs_base = bcm6362_regs_base;
-				bcm63xx_irqs = bcm6362_irqs;
-				break;
-			case BCM6368_CPU_ID:
-				expected_cpu_id = BCM6368_CPU_ID;
-				bcm63xx_regs_base = bcm6368_regs_base;
-				bcm63xx_irqs = bcm6368_irqs;
-				break;
-			case BCM6369_CPU_ID:
-				expected_cpu_id = BCM6369_CPU_ID;
-				bcm63xx_regs_base = bcm6368_regs_base;
-				bcm63xx_irqs = bcm6368_irqs;
-				break;
-			}
+		switch ((read_c0_prid() & 0xf0)) {
+		case 0x10:
+			/* BCM6358 */
+			chipid_reg = BCM_6345_PERF_BASE;
+			chipid_mask = 0xffff0000;
+			chipid_shift = 16;
+			break;
+		case 0x30:
+		case 0x70:
+			chipid_reg = BCM_6368_PERF_BASE;
+			chipid_mask = 0xffff0000;
+			chipid_shift = 16;
+			break;
 		}
 		break;
 	}
@@ -350,25 +326,57 @@ void __init bcm63xx_cpu_init(void)
 	 * really early to panic, but delaying panic would not help since we
 	 * will never get any working console
 	 */
-	if (!expected_cpu_id)
+	if (!chipid_reg)
 		panic("unsupported Broadcom CPU");
 
 	/*
 	 * bcm63xx_regs_base is set, we can access soc registers
 	 */
 
-	/* double check CPU type */
-	tmp = bcm_perf_readl(PERF_REV_REG);
-	bcm63xx_cpu_id = (tmp & REV_CHIPID_MASK) >> REV_CHIPID_SHIFT;
+	/* check CPU type */
+	tmp = bcm_readl(chipid_reg);
+	bcm63xx_cpu_id = (tmp & chipid_mask) >> chipid_shift;
 	bcm63xx_cpu_rev = (tmp & REV_REVID_MASK) >> REV_REVID_SHIFT;
 
-	if (bcm63xx_cpu_id != expected_cpu_id)
-		panic("bcm63xx CPU id mismatch");
+	switch (bcm63xx_cpu_id) {
+	case BCM6328_CPU_ID:
+		bcm63xx_regs_base = bcm6328_regs_base;
+		bcm63xx_irqs = bcm6328_irqs;
+		break;
+	case BCM6338_CPU_ID:
+		bcm63xx_regs_base = bcm6338_regs_base;
+		bcm63xx_irqs = bcm6338_irqs;
+		break;
+	case BCM6345_CPU_ID:
+		bcm63xx_regs_base = bcm6345_regs_base;
+		bcm63xx_irqs = bcm6345_irqs;
+		break;
+	case BCM6348_CPU_ID:
+		bcm63xx_regs_base = bcm6348_regs_base;
+		bcm63xx_irqs = bcm6348_irqs;
+		break;
+	case BCM6358_CPU_ID:
+		bcm63xx_regs_base = bcm6358_regs_base;
+		bcm63xx_irqs = bcm6358_irqs;
+		break;
+	case BCM6362_CPU_ID:
+		bcm63xx_regs_base = bcm6362_regs_base;
+		bcm63xx_irqs = bcm6362_irqs;
+		break;
+	case BCM6368_CPU_ID:
+	case BCM6369_CPU_ID:
+		bcm63xx_regs_base = bcm6368_regs_base;
+		bcm63xx_irqs = bcm6368_irqs;
+		break;
+	default:
+		panic("unsupported broadcom CPU %x", bcm63xx_cpu_id);
+		break;
+	}
 
 	bcm63xx_cpu_freq = detect_cpu_clock();
 	bcm63xx_memory_size = detect_memory_size();
 
-	printk(KERN_INFO "Detected Broadcom 0x%04x CPU revision %02x\n",
+	printk(KERN_INFO "Detected Broadcom 0x%x CPU revision %02x\n",
 	       bcm63xx_cpu_id, bcm63xx_cpu_rev);
 	printk(KERN_INFO "CPU frequency is %u MHz\n",
 	       bcm63xx_cpu_freq / 1000000);

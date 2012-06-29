@@ -872,6 +872,51 @@ static struct board_info __initdata board_96368mvngr = {
 };
 #endif
 
+#ifdef CONFIG_BCM63XX_CPU_63268
+static struct board_info __initdata board_vw6339gu = {
+	.name				= "VW6339GU",
+	.expected_cpu_id		= 0x63168,
+
+	.has_uart0			= 1,
+	.has_enetsw			= 1,
+
+	.enetsw = {
+		.used_ports = {
+			[0] = {
+				.used	= 1,
+				.phy_id	= 1,
+				.name	= "port1",
+			},
+
+			[1] = {
+				.used	= 1,
+				.phy_id	= 2,
+				.name	= "port2",
+			},
+
+			[2] = {
+				.used	= 1,
+				.phy_id	= 3,
+				.name	= "port3",
+			},
+
+			[3] = {
+				.used	= 1,
+				.phy_id	= 4,
+				.name	= "port4",
+			},
+
+			[4] = {
+				.used	= 1,
+				.phy_id	= 7,
+				.name	= "port5",
+			},
+		},
+	},
+
+};
+#endif
+
 /*
  * all boards
  */
@@ -908,6 +953,9 @@ static const struct board_info __initdata *bcm963xx_boards[] = {
 #ifdef CONFIG_BCM63XX_CPU_6368
 	&board_96368mvwg,
 	&board_96368mvngr,
+#endif
+#ifdef CONFIG_BCM63XX_CPU_63268
+	&board_vw6339gu,
 #endif
 };
 

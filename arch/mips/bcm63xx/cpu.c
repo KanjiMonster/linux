@@ -89,6 +89,15 @@ static const int bcm6368_irqs[] = {
 
 };
 
+static const unsigned long bcm63268_regs_base[] = {
+	__GEN_CPU_REGS_TABLE(63268)
+};
+
+static const int bcm63268_irqs[] = {
+	__GEN_CPU_IRQ_TABLE(63268)
+
+};
+
 u32 __bcm63xx_get_cpu_id(void)
 {
 	return bcm63xx_cpu_id;
@@ -237,7 +246,28 @@ static unsigned int detect_cpu_clock(void)
 
 		return (((64 * 1000000) / p1) * p2 * ndiv) / m1;
 	}
+	case BCM63168_CPU_ID:
+	case BCM63268_CPU_ID:
+	{
+		unsigned int tmp, mips_pll_fcvo;
 
+		tmp = bcm_misc_readl(MISC_STRAPBUS_63268_REG);
+		mips_pll_fcvo = (tmp & STRAPBUS_63268_FCVO_MASK)
+				>> STRAPBUS_63268_FCVO_SHIFT;
+		switch (mips_pll_fcvo) {
+		case 0x3:
+		case 0xe:
+			return 320000000;
+		case 0xa:
+			return 333000000;
+		case 0x2:
+		case 0xb:
+		case 0xf:
+			return 400000000;
+		default:
+			return 0;
+		}
+	}
 	default:
 		BUG();
 	}
@@ -251,7 +281,7 @@ static unsigned int detect_memory_size(void)
 	unsigned int cols = 0, rows = 0, is_32bits = 0, banks = 0;
 	u32 val;
 
-	if (BCMCPU_IS_6328() || BCMCPU_IS_6362())
+	if (BCMCPU_IS_6328() || BCMCPU_IS_6362() || BCMCPU_IS_63268())
 		return bcm_ddr_readl(DDR_CSEND_REG) << 24;
 
 	if (BCMCPU_IS_6345()) {
@@ -318,6 +348,12 @@ void __init bcm63xx_cpu_init(void)
 			chipid_mask = 0xffff0000;
 			chipid_shift = 16;
 			break;
+		case 0x80:
+			chipid_reg = BCM_6368_PERF_BASE;
+			chipid_mask = 0xfffff000;
+			chipid_shift = 12;
+			break;
+
 		}
 		break;
 	}
@@ -368,8 +404,13 @@ void __init bcm63xx_cpu_init(void)
 		bcm63xx_regs_base = bcm6368_regs_base;
 		bcm63xx_irqs = bcm6368_irqs;
 		break;
+	case BCM63168_CPU_ID:
+	case BCM63268_CPU_ID:
+		bcm63xx_regs_base = bcm63268_regs_base;
+		bcm63xx_irqs = bcm63268_irqs;
+		break;
 	default:
-		panic("unsupported broadcom CPU %x", bcm63xx_cpu_id);
+		panic("unsupported broadcom chip");
 		break;
 	}
 

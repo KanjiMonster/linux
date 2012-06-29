@@ -118,6 +118,19 @@ static void __internal_irq_unmask_128(unsigned int irq) __maybe_unused;
 #define ext_irq_cfg_reg1	PERF_EXTIRQ_CFG_REG_6368
 #define ext_irq_cfg_reg2	PERF_EXTIRQ_CFG_REG2_6368
 #endif
+#ifdef CONFIG_BCM63XX_CPU_63268
+#define irq_stat_reg1		PERF_IRQSTAT_63268_REG
+#define irq_mask_reg1		PERF_IRQMASK_63268_REG
+#define irq_stat_reg2		PERF_IRQSTAT_63268_REG2
+#define irq_mask_reg2		PERF_IRQSTAT_63268_REG2
+#define irq_bits		128
+#define is_ext_irq_cascaded	1
+#define ext_irq_start		(BCM_63268_EXT_IRQ0 - IRQ_INTERNAL_BASE)
+#define ext_irq_end		(BCM_63268_EXT_IRQ5 - IRQ_INTERNAL_BASE)
+#define ext_irq_count		6
+#define ext_irq_cfg_reg1	PERF_EXTIRQ_CFG_REG_63268
+#define ext_irq_cfg_reg2	PERF_EXTIRQ_CFG_REG2_63268
+#endif
 
 #if irq_bits == 32
 #define dispatch_internal			__dispatch_internal
@@ -225,6 +238,20 @@ static void bcm63xx_init_irq(void)
 		ext_irq_cfg_reg1 = PERF_EXTIRQ_CFG_REG_6368;
 		ext_irq_cfg_reg2 = PERF_EXTIRQ_CFG_REG2_6368;
 		break;
+	case BCM63168_CPU_ID:
+	case BCM63268_CPU_ID:
+		irq_stat_addr1 += PERF_IRQSTAT_63268_REG;
+		irq_mask_addr1 += PERF_IRQMASK_63268_REG;
+		irq_stat_addr2 += PERF_IRQSTAT_63268_REG2;
+		irq_mask_addr2 += PERF_IRQMASK_63268_REG2;
+		irq_bits = 128;
+		ext_irq_count = 4;
+		is_ext_irq_cascaded = 1;
+		ext_irq_start = BCM_63268_EXT_IRQ0 - IRQ_INTERNAL_BASE;
+		ext_irq_end = BCM_63268_EXT_IRQ3 - IRQ_INTERNAL_BASE;
+		ext_irq_cfg_reg1 = PERF_EXTIRQ_CFG_REG_63268;
+		break;
+
 	default:
 		BUG();
 	}
@@ -571,6 +598,8 @@ static int bcm63xx_external_irq_set_type(struct irq_data *d,
 	case BCM6362_CPU_ID:
 	case BCM6368_CPU_ID:
 	case BCM6369_CPU_ID:
+	case BCM63168_CPU_ID:
+	case BCM63268_CPU_ID:
 		if (levelsense)
 			reg |= EXTIRQ_CFG_LEVELSENSE(irq);
 		else

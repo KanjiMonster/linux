@@ -22,6 +22,9 @@ static inline unsigned long bcm63xx_gpio_count(void)
 	case BCM6368_CPU_ID:
 	case BCM6369_CPU_ID:
 		return 38;
+	case BCM63168_CPU_ID:
+	case BCM63268_CPU_ID:
+		return 52;
 	case BCM6348_CPU_ID:
 	default:
 		return 37;

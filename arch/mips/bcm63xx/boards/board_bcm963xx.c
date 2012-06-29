@@ -971,7 +971,7 @@ void __init board_prom_init(void)
 	/* read base address of boot chip select (0)
 	 * 6328 does not have MPI but boots from a fixed address
 	 */
-	if (BCMCPU_IS_6328() || BCMCPU_IS_6362())
+	if (BCMCPU_IS_6328() || BCMCPU_IS_6362() || BCMCPU_IS_63268())
 		val = 0x18000000;
 	else {
 		val = bcm_mpi_readl(MPI_CSBASE_REG(0));

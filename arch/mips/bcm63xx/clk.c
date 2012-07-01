@@ -248,6 +248,8 @@ static void hsspi_set(struct clk *clk, int enable)
 		mask = CKCTL_6328_HSSPI_EN;
 	else if (BCMCPU_IS_6362())
 		mask = CKCTL_6362_HSSPI_EN;
+	else if (BCMCPU_IS_63268())
+		mask = CKCTL_63268_HSSPI_EN;
 	else
 		return;
 

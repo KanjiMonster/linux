@@ -125,6 +125,19 @@ static int __init bcm63xx_detect_flash_type(void)
 		case STRAPBUS_6368_BOOT_SEL_PARALLEL:
 			return BCM63XX_FLASH_TYPE_PARALLEL;
 		}
+	case BCM63168_CPU_ID:
+	case BCM63268_CPU_ID:
+		val = bcm_misc_readl(MISC_STRAPBUS_63268_REG);
+		if (val & STRAPBUS_63268_HSSPI_CLK_FAST)
+			bcm63xx_spi_flash_info[0].max_speed_hz = 50000000;
+		else
+			bcm63xx_spi_flash_info[0].max_speed_hz = 20000000;
+
+		if (val & STRAPBUS_63268_BOOT_SEL_SERIAL)
+			return BCM63XX_FLASH_TYPE_SERIAL;
+		else
+			return BCM63XX_FLASH_TYPE_NAND;
+		break;
 	default:
 		return -EINVAL;
 	}

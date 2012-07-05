@@ -4,43 +4,51 @@ menu "CPU support"
 config BCM63XX_CPU_6328
 	bool "support 6328 CPU"
 	select HW_HAS_PCI
+	select SYS_HAS_CPU_BMIPS4350
 
 config BCM63XX_CPU_6338
 	bool "support 6338 CPU"
 	select HW_HAS_PCI
 	select USB_ARCH_HAS_OHCI if USB_SUPPORT
+	select SYS_HAS_CPU_BMIPS3300
 
 config BCM63XX_CPU_6345
 	bool "support 6345 CPU"
+	select SYS_HAS_CPU_BMIPS3300
 
 config BCM63XX_CPU_6348
 	bool "support 6348 CPU"
 	select HW_HAS_PCI
 	select USB_ARCH_HAS_OHCI if USB_SUPPORT
+	select SYS_HAS_CPU_BMIPS3300
 
 config BCM63XX_CPU_6358
 	bool "support 6358 CPU"
 	select HW_HAS_PCI
 	select USB_ARCH_HAS_OHCI if USB_SUPPORT
 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
+	select SYS_HAS_CPU_BMIPS4350
 
 config BCM63XX_CPU_6362
 	bool "support 6362 CPU"
 	select HW_HAS_PCI
 	select USB_ARCH_HAS_OHCI if USB_SUPPORT
 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
+	select SYS_HAS_CPU_BMIPS4350
 
 config BCM63XX_CPU_6368
 	bool "support 6368 CPU"
 	select HW_HAS_PCI
 	select USB_ARCH_HAS_OHCI if USB_SUPPORT
 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
+	select SYS_HAS_CPU_BMIPS4350
 
 config BCM63XX_CPU_63268
 	bool "support 63168/63268 CPU"
 	select HW_HAS_PCI
 	select USB_ARCH_HAS_OHCI if USB_SUPPORT
 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
+	select SYS_HAS_CPU_BMIPS4350
 endmenu
 
 source "arch/mips/bcm63xx/boards/Kconfig"

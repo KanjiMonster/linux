@@ -227,6 +227,8 @@ static void spi_set(struct clk *clk, int enable)
 		mask = CKCTL_6358_SPI_EN;
 	else if (BCMCPU_IS_6362())
 		mask = CKCTL_6362_SPI_EN;
+	else if (BCMCPU_IS_63268())
+		mask = CKCTL_63268_SPI_EN;
 	else
 		/* BCMCPU_IS_6368 */
 		mask = CKCTL_6368_SPI_EN;

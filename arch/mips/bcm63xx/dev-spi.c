@@ -42,6 +42,10 @@ static const unsigned long bcm6368_regs_spi[] = {
 	__GEN_SPI_REGS_TABLE(6368)
 };
 
+static const unsigned long bcm63268_regs_spi[] = {
+	__GEN_SPI_REGS_TABLE(63268)
+};
+
 const unsigned long *bcm63xx_regs_spi;
 EXPORT_SYMBOL(bcm63xx_regs_spi);
 
@@ -57,6 +61,8 @@ static __init void bcm63xx_spi_regs_init(void)
 		bcm63xx_regs_spi = bcm6362_regs_spi;
 	if (BCMCPU_IS_6368())
 		bcm63xx_regs_spi = bcm6368_regs_spi;
+	if (BCMCPU_IS_63268())
+		bcm63xx_regs_spi = bcm63268_regs_spi;
 }
 #else
 static __init void bcm63xx_spi_regs_init(void) { }
@@ -105,7 +111,7 @@ int __init bcm63xx_spi_register(void)
 	/* Set bus frequency */
 	spi_pdata.speed_hz = clk_get_rate(periph_clk);
 
-	if (BCMCPU_IS_6362())
+	if (BCMCPU_IS_6362() || BCMCPU_IS_63268())
 		spi_pdata.bus_num = 1;
 
 	spi_resources[0].start = bcm63xx_regset_address(RSET_SPI);
@@ -117,7 +123,8 @@ int __init bcm63xx_spi_register(void)
 		spi_pdata.fifo_size = SPI_6338_MSG_DATA_SIZE;
 	}
 
-	if (BCMCPU_IS_6358() || BCMCPU_IS_6362() || BCMCPU_IS_6368()) {
+	if (BCMCPU_IS_6358() || BCMCPU_IS_6362() || BCMCPU_IS_6368() ||
+	    BCMCPU_IS_63268()) {
 		spi_resources[0].end += BCM_6358_RSET_SPI_SIZE - 1;
 		spi_pdata.fifo_size = SPI_6358_MSG_DATA_SIZE;
 	}

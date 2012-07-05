@@ -1477,6 +1477,22 @@
 #define SPI_6368_MSG_TAIL		0x709
 #define SPI_6368_RX_TAIL		0x70B
 
+/* BCM 63268 SPI core */
+#define SPI_63268_MSG_CTL		0x00	/* 16-bits register */
+#define SPI_63268_MSG_DATA		0x02
+#define SPI_63268_MSG_DATA_SIZE		0x21e
+#define SPI_63268_RX_DATA		0x400
+#define SPI_63268_RX_DATA_SIZE		0x220
+#define SPI_63268_CMD			0x700	/* 16-bits register */
+#define SPI_63268_INT_STATUS		0x702
+#define SPI_63268_INT_MASK_ST		0x703
+#define SPI_63268_INT_MASK		0x704
+#define SPI_63268_ST			0x705
+#define SPI_63268_CLK_CFG		0x706
+#define SPI_63268_FILL_BYTE		0x707
+#define SPI_63268_MSG_TAIL		0x709
+#define SPI_63268_RX_TAIL		0x70B
+
 /* Shared SPI definitions */
 
 /* Message configuration */

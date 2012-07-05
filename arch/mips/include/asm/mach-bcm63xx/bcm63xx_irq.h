@@ -4,7 +4,7 @@
 #include <bcm63xx_cpu.h>
 
 #define IRQ_INTERNAL_BASE		8
-#define IRQ_EXTERNAL_BASE		100
+#define IRQ_EXTERNAL_BASE		(IRQ_INTERNAL_BASE + 128)
 #define IRQ_EXT_0			(IRQ_EXTERNAL_BASE + 0)
 #define IRQ_EXT_1			(IRQ_EXTERNAL_BASE + 1)
 #define IRQ_EXT_2			(IRQ_EXTERNAL_BASE + 2)

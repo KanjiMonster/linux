@@ -42,10 +42,11 @@ struct bcm63xx_enet_platform_data {
 /*
  * on board ethernet switch platform data
  */
-#define ENETSW_MAX_PORT	6
+#define ENETSW_MAX_PORT	8
 #define ENETSW_PORTS_6328 5 /* 4 FE PHY + 1 RGMII */
 #define ENETSW_PORTS_6362 6 /* 4 FE PHY + 2 RGMII */
 #define ENETSW_PORTS_6368 6 /* 4 FE PHY + 2 RGMII */
+#define ENETSW_PORTS_63268 8 /* 3 FE PHY + 1 GE PHY + 4 RGMII */
 
 #define ENETSW_RGMII_PORT0	4
 

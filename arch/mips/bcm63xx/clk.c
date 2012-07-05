@@ -120,13 +120,16 @@ static void enetsw_set(struct clk *clk, int enable)
 {
 	u32 mask;
 
-	if (!BCMCPU_IS_6328() && !BCMCPU_IS_6362() && !BCMCPU_IS_6368())
+	if (!BCMCPU_IS_6328() && !BCMCPU_IS_6362() && !BCMCPU_IS_6368() &&
+	    !BCMCPU_IS_63268())
 		return;
 
 	if (BCMCPU_IS_6328())
 		mask = CKCTL_6328_ROBOSW_EN;
 	else if (BCMCPU_IS_6362())
 		mask = CKCTL_6362_ROBOSW_EN;
+	else if (BCMCPU_IS_63268())
+		mask = CKCTL_63268_ROBOSW_EN;
 	else
 		mask = CKCTL_6368_ROBOSW_EN | CKCTL_6368_SWPKT_USB_EN |
 		       CKCTL_6368_SWPKT_SAR_EN;
@@ -142,6 +145,9 @@ static void enetsw_set(struct clk *clk, int enable)
 		} else if (BCMCPU_IS_6362()) {
 			reg = PERF_SOFTRESET_6362_REG;
 			mask = SOFTRESET_6362_ENETSW_MASK;
+		} else if (BCMCPU_IS_63268()) {
+			reg = PERF_SOFTRESET_63268_REG;
+			mask = SOFTRESET_63268_ENETSW_MASK;
 		} else {
 			reg = PERF_SOFTRESET_6368_REG;
 			mask = SOFTRESET_6368_ENETSW_MASK;

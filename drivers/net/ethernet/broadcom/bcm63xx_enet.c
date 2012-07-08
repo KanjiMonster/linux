@@ -2153,10 +2153,12 @@ static int bcm_enetsw_open(struct net_device *dev)
 	if (ret)
 		goto out_freeirq;
 
-	ret = request_irq(priv->irq_tx, bcm_enet_isr_dma,
-			  IRQF_DISABLED, dev->name, dev);
-	if (ret)
-		goto out_freeirq_rx;
+	if (priv->irq_tx != -1) {
+		ret = request_irq(priv->irq_tx, bcm_enet_isr_dma,
+				  IRQF_DISABLED, dev->name, dev);
+		if (ret)
+			goto out_freeirq_rx;
+	}
 
 	/* allocate rx dma ring */
 	size = priv->rx_ring_size * sizeof(struct bcm_enet_desc);
@@ -2378,7 +2380,8 @@ out_free_rx_ring:
 			  priv->rx_desc_cpu, priv->rx_desc_dma);
 
 out_freeirq_tx:
-	free_irq(priv->irq_tx, dev);
+	if (priv->irq_tx != -1)
+		free_irq(priv->irq_tx, dev);
 
 out_freeirq_rx:
 	free_irq(priv->irq_rx, dev);
@@ -2435,7 +2438,8 @@ static int bcm_enetsw_stop(struct net_device *dev)
 			  priv->rx_desc_cpu, priv->rx_desc_dma);
 	dma_free_coherent(kdev, priv->tx_desc_alloc_size,
 			  priv->tx_desc_cpu, priv->tx_desc_dma);
-	free_irq(priv->irq_tx, dev);
+	if (priv->irq_tx != -1)
+		free_irq(priv->irq_tx, dev);
 	free_irq(priv->irq_rx, dev);
 
 	return 0;
@@ -2718,7 +2722,7 @@ static int __devinit bcm_enetsw_probe(struct platform_device *pdev)
 	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	irq_rx = platform_get_irq(pdev, 0);
 	irq_tx = platform_get_irq(pdev, 1);
-	if (!res_mem || irq_rx < 0 || irq_tx < 0)
+	if (!res_mem || irq_rx < 0)
 		return -ENODEV;
 
 	ret = 0;

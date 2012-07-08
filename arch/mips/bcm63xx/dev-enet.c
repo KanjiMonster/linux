@@ -236,6 +236,8 @@ bcm63xx_enetsw_register(const struct bcm63xx_enetsw_platform_data *pd)
 	enetsw_res[0].end += RSET_ENETSW_SIZE - 1;
 	enetsw_res[1].start = bcm63xx_get_irq_number(IRQ_ENETSW_RXDMA0);
 	enetsw_res[2].start = bcm63xx_get_irq_number(IRQ_ENETSW_TXDMA0);
+	if (!enetsw_res[2].start)
+		enetsw_res[2].start = -1;
 
 	memcpy(bcm63xx_enetsw_device.dev.platform_data, pd, sizeof (*pd));
 

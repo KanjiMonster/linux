@@ -195,6 +195,8 @@ static void usbh_set(struct clk *clk, int enable)
 		bcm_hwclock_set(CKCTL_6362_USBH_EN, enable);
 	else if (BCMCPU_IS_6368())
 		bcm_hwclock_set(CKCTL_6368_USBH_EN, enable);
+	else if (BCMCPU_IS_63268())
+		bcm_hwclock_set(CKCTL_63268_USBH_EN, enable);
 }
 
 static struct clk clk_usbh = {
@@ -212,6 +214,8 @@ static void usbd_set(struct clk *clk, int enable)
 		bcm_hwclock_set(CKCTL_6362_USBD_EN, enable);
 	else if (BCMCPU_IS_6368())
 		bcm_hwclock_set(CKCTL_6368_USBD_EN, enable);
+	else if (BCMCPU_IS_63268())
+		bcm_hwclock_set(CKCTL_63268_USBD_EN, enable);
 }
 
 static struct clk clk_usbd = {

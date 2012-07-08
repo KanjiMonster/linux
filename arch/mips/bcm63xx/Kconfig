@@ -39,6 +39,8 @@ config BCM63XX_CPU_6368
 config BCM63XX_CPU_63268
 	bool "support 63168/63268 CPU"
 	select HW_HAS_PCI
+	select USB_ARCH_HAS_OHCI if USB_SUPPORT
+	select USB_ARCH_HAS_EHCI if USB_SUPPORT
 endmenu
 
 source "arch/mips/bcm63xx/boards/Kconfig"

@@ -2048,6 +2048,7 @@ static void swphy_poll_timer(unsigned long data)
 	for (i = 0; i < priv->num_ports; i++) {
 		struct bcm63xx_enetsw_port *port;
 		int val, j, up, advertise, lpa, lpa2, speed, duplex, media;
+		int external_phy = bcm_enet_port_is_rgmii(i);
 		u8 override;
 
 		port = &priv->used_ports[i];
@@ -2059,7 +2060,7 @@ static void swphy_poll_timer(unsigned long data)
 
 		/* dummy read to clear */
 		for (j = 0; j < 2; j++)
-			val = bcmenet_sw_mdio_read(priv, port->external_phy,
+			val = bcmenet_sw_mdio_read(priv, external_phy,
 						   port->phy_id, MII_BMSR);
 
 		if (val == 0xffff)
@@ -2083,14 +2084,14 @@ static void swphy_poll_timer(unsigned long data)
 			continue;
 		}
 
-		advertise = bcmenet_sw_mdio_read(priv, port->external_phy,
+		advertise = bcmenet_sw_mdio_read(priv, external_phy,
 						 port->phy_id, MII_ADVERTISE);
 
-		lpa = bcmenet_sw_mdio_read(priv, port->external_phy,
-					   port->phy_id, MII_LPA);
+		lpa = bcmenet_sw_mdio_read(priv, external_phy, port->phy_id,
+					   MII_LPA);
 
-		lpa2 = bcmenet_sw_mdio_read(priv, port->external_phy,
-					   port->phy_id, MII_STAT1000);
+		lpa2 = bcmenet_sw_mdio_read(priv, external_phy, port->phy_id,
+					    MII_STAT1000);
 
 		/* figure out media and duplex from advertise and LPA values */
 		media = mii_nway_result(lpa & advertise);
@@ -2459,7 +2460,7 @@ static int bcm_enetsw_phy_is_external(struct bcm_enet_priv *priv, int phy_id)
 		if (!priv->used_ports[i].used)
 			continue;
 		if (priv->used_ports[i].phy_id == phy_id)
-			return priv->used_ports[i].external_phy;
+			return bcm_enet_port_is_rgmii(i);
 	}
 
 	printk_once(KERN_WARNING  "bcm63xx_enet: could not find a used port "

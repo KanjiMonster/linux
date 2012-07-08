@@ -341,4 +341,9 @@ struct bcm_enet_priv {
 	spinlock_t enetsw_mdio_lock;
 };
 
+static inline int bcm_enet_port_is_rgmii(int portid)
+{
+	return portid >= ENETSW_RGMII_PORT0;
+}
+
 #endif /* ! BCM63XX_ENET_H_ */

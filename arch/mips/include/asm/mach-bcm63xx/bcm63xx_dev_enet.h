@@ -46,9 +46,10 @@ struct bcm63xx_enet_platform_data {
 #define ENETSW_PORTS_6328 5 /* 4 FE PHY + 1 RGMII */
 #define ENETSW_PORTS_6368 6 /* 4 FE PHY + 2 RGMII */
 
+#define ENETSW_RGMII_PORT0	4
+
 struct bcm63xx_enetsw_port {
 	int		used;
-	int		external_phy;
 	int		phy_id;
 
 	int		bypass_link;

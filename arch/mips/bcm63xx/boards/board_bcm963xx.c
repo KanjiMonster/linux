@@ -763,14 +763,12 @@ static struct board_info __initdata board_96368mvwg = {
 			[4] = {
 				.used	= 1,
 				.phy_id	= 0x12,
-				.external_phy = 1,
 				.name	= "port0",
 			},
 
 			[5] = {
 				.used	= 1,
 				.phy_id	= 0x11,
-				.external_phy = 1,
 				.name	= "port3",
 			},
 		},

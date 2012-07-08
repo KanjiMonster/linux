@@ -63,7 +63,7 @@ struct board_info {
 	struct bcm63xx_dsp_platform_data dsp;
 
 	/* GPIO LEDs */
-	struct gpio_led leds[5];
+	struct gpio_led leds[14];
 };
 
 #endif /* ! BOARD_BCM963XX_H_ */

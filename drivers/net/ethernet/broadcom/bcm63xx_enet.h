@@ -326,6 +326,7 @@ struct bcm_enet_priv {
 	unsigned int hw_mtu;
 
 	/* port mapping for switch devices */
+	int num_ports;
 	struct bcm63xx_enetsw_port used_ports[ENETSW_MAX_PORT];
 	int sw_port_link[ENETSW_MAX_PORT];
 

@@ -2043,7 +2043,7 @@ static void swphy_poll_timer(unsigned long data)
 	struct bcm_enet_priv *priv = (struct bcm_enet_priv *)data;
 	unsigned int i;
 
-	for (i = 0; i < ARRAY_SIZE(priv->used_ports); i++) {
+	for (i = 0; i < priv->num_ports; i++) {
 		struct bcm63xx_enetsw_port *port;
 		int val, j, up, advertise, lpa, lpa2, speed, duplex, media;
 		u8 override;
@@ -2209,7 +2209,7 @@ static int bcm_enetsw_open(struct net_device *dev)
 	priv->rx_curr_desc = 0;
 
 	/* disable all ports */
-	for (i = 0; i < 6; i++) {
+	for (i = 0; i < priv->num_ports; i++) {
 		enetsw_writeb(priv, ENETSW_PORTOV_ENABLE_MASK,
 			      ENETSW_PORTOV_REG(i));
 		enetsw_writeb(priv, ENETSW_PTCTRL_RXDIS_MASK |
@@ -2305,7 +2305,7 @@ static int bcm_enetsw_open(struct net_device *dev)
 	/*
 	 * apply override config for bypass_link ports here.
 	 */
-	for (i = 0; i < ARRAY_SIZE(priv->used_ports); i++) {
+	for (i = 0; i < priv->num_ports; i++) {
 		struct bcm63xx_enetsw_port *port;
 		u8 override;
 		port = &priv->used_ports[i];
@@ -2449,7 +2449,7 @@ static int bcm_enetsw_phy_is_external(struct bcm_enet_priv *priv, int phy_id)
 {
 	int i;
 
-	for (i = 0; i < (int)ARRAY_SIZE(priv->used_ports); ++i) {
+	for (i = 0; i < priv->num_ports; ++i) {
 		if (!priv->used_ports[i].used)
 			continue;
 		if (priv->used_ports[i].phy_id == phy_id)
@@ -2737,6 +2737,7 @@ static int __devinit bcm_enetsw_probe(struct platform_device *pdev)
 		memcpy(dev->dev_addr, pd->mac_addr, ETH_ALEN);
 		memcpy(priv->used_ports, pd->used_ports,
 		       sizeof (pd->used_ports));
+		priv->num_ports = pd->num_ports;
 	}
 
 	ret = compute_hw_mtu(priv, dev->mtu);

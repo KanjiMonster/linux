@@ -239,6 +239,8 @@ bcm63xx_enetsw_register(const struct bcm63xx_enetsw_platform_data *pd)
 
 	memcpy(bcm63xx_enetsw_device.dev.platform_data, pd, sizeof (*pd));
 
+	enetsw_pd.num_ports = ENETSW_PORTS_6368;
+
 	ret = platform_device_register(&bcm63xx_enetsw_device);
 	if (ret)
 		return ret;

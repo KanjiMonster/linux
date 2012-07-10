@@ -364,7 +364,7 @@ static int bcm_enet_receive_queue(struct net_device *dev, int budget)
 		}
 
 		/* recycle packet if it's marked as bad */
-		if (!bcm_enet_is_sw(priv) &&
+		if (!priv->enet_is_sw &&
 		    unlikely(len_stat & DMADESC_ERR_MASK)) {
 			dev->stats.rx_errors++;
 
@@ -597,7 +597,7 @@ static int bcm_enet_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	}
 
 	/* pad small packets sent on a switch device */
-	if (bcm_enet_is_sw(priv) && skb->len < 64) {
+	if (priv->enet_is_sw && skb->len < 64) {
 		int needed = 64 - skb->len;
 		char *data;
 
@@ -1741,6 +1741,8 @@ static int __devinit bcm_enet_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	priv = netdev_priv(dev);
 
+	priv->enet_is_sw = false;
+
 	ret = compute_hw_mtu(priv, dev->mtu);
 	if (ret)
 		goto out;
@@ -2727,6 +2729,7 @@ static int __devinit bcm_enetsw_probe(struct platform_device *pdev)
 	memset(priv, 0, sizeof(*priv));
 
 	/* initialize default and fetch platform data */
+	priv->enet_is_sw = true;
 	priv->irq_rx = irq_rx;
 	priv->irq_tx = irq_tx;
 	priv->rx_ring_size = BCMENET_DEF_RX_DESC;

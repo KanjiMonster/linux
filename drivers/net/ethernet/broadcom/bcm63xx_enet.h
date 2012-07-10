@@ -325,6 +325,8 @@ struct bcm_enet_priv {
 	/* maximum hardware transmit/receive size */
 	unsigned int hw_mtu;
 
+	bool enet_is_sw;
+
 	/* port mapping for switch devices */
 	int num_ports;
 	struct bcm63xx_enetsw_port used_ports[ENETSW_MAX_PORT];
@@ -334,13 +336,5 @@ struct bcm_enet_priv {
 	struct timer_list swphy_poll;
 	spinlock_t enetsw_mdio_lock;
 };
-
-static inline int bcm_enet_is_sw(struct bcm_enet_priv *priv)
-{
-	if (BCMCPU_IS_6368())
-		return 1;
-	else
-		return 0;
-}
 
 #endif /* ! BCM63XX_ENET_H_ */

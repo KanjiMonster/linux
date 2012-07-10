@@ -2335,7 +2335,7 @@ static int bcm_enetsw_open(struct net_device *dev)
 		}
 
 		if (port->force_duplex_full)
-			override = ENETSW_IMPOV_FDX_MASK;
+			override |= ENETSW_IMPOV_FDX_MASK;
 
 
 		enetsw_writeb(priv, override, ENETSW_PORTOV_REG(i));

@@ -792,6 +792,19 @@
 #define ENETSW_PORTOV_FDX_MASK		(1 << 1)
 #define ENETSW_PORTOV_LINKUP_MASK	(1 << 0)
 
+/* Port RGMII control register */
+#define ENETSW_RGMII_CTRL_REG(x)	(0x60 + (x))
+#define ENETSW_RGMII_CTRL_GMII_CLK_EN	(1 << 7)
+#define ENETSW_RGMII_CTRL_MII_OVERRIDE_EN (1 << 6)
+#define ENETSW_RGMII_CTRL_MII_MODE_MASK	(3 << 4)
+#define ENETSW_RGMII_CTRL_RGMII_MODE	(0 << 4)
+#define ENETSW_RGMII_CTRL_MII_MODE	(1 << 4)
+#define ENETSW_RGMII_CTRL_RVMII_MODE	(2 << 4)
+#define ENETSW_RGMII_CTRL_TIMING_SEL_EN	(1 << 0)
+
+/* Port RGMII timing register */
+#define ENETSW_RGMII_TIMING_REG(x)	(0x68 + (x))
+
 /* MDIO control register */
 #define ENETSW_MDIOC_REG		(0xb0)
 #define ENETSW_MDIOC_EXT_MASK		(1 << 16)

@@ -2224,6 +2224,18 @@ static int bcm_enetsw_open(struct net_device *dev)
 		priv->sw_port_link[i] = 0;
 	}
 
+	/* enable external ports */
+	for (i = ENETSW_RGMII_PORT0; i < priv->num_ports; i++) {
+		u8 rgmii_ctrl;
+
+		if (!priv->used_ports[i].used)
+			continue;
+
+		rgmii_ctrl = enetsw_readb(priv, ENETSW_RGMII_CTRL_REG(i));
+		rgmii_ctrl |= ENETSW_RGMII_CTRL_GMII_CLK_EN;
+		enetsw_writeb(priv, rgmii_ctrl, ENETSW_RGMII_CTRL_REG(i));
+	}
+
 	/* reset mib */
 	val = enetsw_readb(priv, ENETSW_GMCR_REG);
 	val |= ENETSW_GMCR_RST_MIB_MASK;

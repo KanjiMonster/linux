@@ -2233,6 +2233,11 @@ static int bcm_enetsw_open(struct net_device *dev)
 
 		rgmii_ctrl = enetsw_readb(priv, ENETSW_RGMII_CTRL_REG(i));
 		rgmii_ctrl |= ENETSW_RGMII_CTRL_GMII_CLK_EN;
+		if (BCMCPU_IS_63268()) {
+			/* BCM63268 can only do RGMII, so force it */
+			rgmii_ctrl |= ENETSW_RGMII_CTRL_MII_OVERRIDE_EN;
+			rgmii_ctrl &= ~ENETSW_RGMII_CTRL_MII_MODE_MASK;
+		}
 		enetsw_writeb(priv, rgmii_ctrl, ENETSW_RGMII_CTRL_REG(i));
 	}
 

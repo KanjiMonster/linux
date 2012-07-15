@@ -167,7 +167,7 @@ static int bcm63xx_hsspi_transfer_one(struct spi_master *master,
 		if (t->speed_hz > spi->max_speed_hz)
 			goto out;
 
-		if (t->len > HSSPI_BUFFER_LEN)
+		if (t->len > HSSPI_MAX_TX_LEN)
 			goto out;
 
 		/*
@@ -183,7 +183,7 @@ static int bcm63xx_hsspi_transfer_one(struct spi_master *master,
 			 * their combined length is bigger than the buffer
 			 */
 			if (prev->tx_buf && t->tx_buf &&
-			    (prev->len + t->len) > HSSPI_BUFFER_LEN)
+			    (prev->len + t->len) > HSSPI_MAX_TX_LEN)
 				goto out;
 			/*
 			 * reject if we need write more than 15 bytes in read

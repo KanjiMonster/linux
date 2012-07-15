@@ -18,6 +18,9 @@ struct bcm63xx_hsspi_pdata {
 #define HSSPI_PLL_HZ_6328	133333333
 #define HSSPI_PLL_HZ		400000000
 
-#define HSSPI_BUFFER_LEN	512
+/* TX buffer RAM is 512 bytes, but 2 bytes are reserved for the opcode. */
+#define HSSPI_MAX_TX_LEN	510
+#define HSSPI_MAX_RX_LEN	512
+#define HSSPI_OPCODE_LEN	2
 
 #endif /* BCM63XX_DEV_HSSPI_H */

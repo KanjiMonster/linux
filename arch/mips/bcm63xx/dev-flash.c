@@ -176,7 +176,7 @@ int __init bcm63xx_flash_register(void)
 		return platform_device_register(&mtd_dev);
 	case BCM63XX_FLASH_TYPE_SERIAL:
 		if (BCMCPU_IS_6328() || BCMCPU_IS_6362())
-			bcm63xx_flash_data.max_transfer_len = HSSPI_BUFFER_LEN;
+			bcm63xx_flash_data.max_transfer_len = HSSPI_MAX_TX_LEN;
 
 		return spi_register_board_info(bcm63xx_spi_flash_info,
 					ARRAY_SIZE(bcm63xx_spi_flash_info));

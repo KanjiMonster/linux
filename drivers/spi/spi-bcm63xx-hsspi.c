@@ -20,6 +20,8 @@
 #include <linux/spi/spi.h>
 #include <linux/workqueue.h>
 
+#include <asm/byteorder.h>
+
 #include <bcm63xx_regs.h>
 #include <bcm63xx_dev_hsspi.h>
 
@@ -35,7 +37,6 @@
 
 struct bcm63xx_hsspi {
 	struct completion	done;
-	struct spi_transfer	*curr_trans;
 
 	struct platform_device  *pdev;
 	struct clk		*clk;
@@ -64,57 +65,35 @@ static void bcm63xx_hsspi_set_clk(struct bcm63xx_hsspi *bs, int hz,
 }
 
 static int bcm63xx_hsspi_do_txrx(struct spi_device *spi,
-				 struct spi_transfer *t1,
-				 struct spi_transfer *t2)
+				 struct list_head *queue)
 {
 	struct bcm63xx_hsspi *bs = spi_master_get_devdata(spi->master);
-	u8 chip_select = spi->chip_select;
-	u16 opcode = 0;
-	int len, prepend_size = 0;
+	u16 pos = HSSPI_OPCODE_LEN;
+	u16 opcode;
+	struct spi_transfer *t;
 
-	init_completion(&bs->done);
-
-	bs->curr_trans = t2 ? t2 : t1;
-	bcm63xx_hsspi_set_clk(bs, bs->curr_trans->speed_hz, chip_select);
-
-	if (t2 && !t2->tx_buf)
-		prepend_size = t1->len;
-
-	bcm_hsspi_writel(prepend_size << MODE_CTRL_PREPENDBYTE_CNT_SHIFT |
-			 2 << MODE_CTRL_MULTIDATA_WR_STRT_SHIFT |
-			 2 << MODE_CTRL_MULTIDATA_RD_STRT_SHIFT | 0xff,
-			 HSSPI_PROFILE_MODE_CTRL_REG(chip_select));
-
-	if (t1->rx_buf && t1->tx_buf)
-		opcode = HSSPI_OP_READ_WRITE;
-	else if (t1->rx_buf || (t2 && t2->rx_buf))
-		opcode = HSSPI_OP_READ;
-	else if (t1->tx_buf)
-		opcode = HSSPI_OP_WRITE;
-
-	if (opcode == HSSPI_OP_READ && t2)
-		len = t2->len;
-	else
-		len = t1->len;
-
-	if (t1->tx_buf) {
-		memcpy_toio(bs->fifo + 2, t1->tx_buf, t1->len);
-		if (t2 && t2->tx_buf) {
-			memcpy_toio(bs->fifo + 2 + t1->len,
-				    t2->tx_buf, t2->len);
-			len += t2->len;
-		}
+	list_for_each_entry(t, queue, transfer_list) {
+		if (t->tx_buf)
+			memcpy_toio(&bs->fifo[pos], t->tx_buf, t->len);
+		else
+			memset_io(&bs->fifo[pos], 0xff, t->len);
+		pos += t->len;
 	}
 
-	opcode |= len;
+	opcode = cpu_to_be16(HSSPI_OP_READ_WRITE | (pos - HSSPI_OPCODE_LEN));
 	memcpy_toio(bs->fifo, &opcode, sizeof(opcode));
 
+	bcm_hsspi_writel(2 << MODE_CTRL_MULTIDATA_WR_STRT_SHIFT |
+			 2 << MODE_CTRL_MULTIDATA_RD_STRT_SHIFT | 0xff,
+			 HSSPI_PROFILE_MODE_CTRL_REG(spi->chip_select));
+
 	/* enable interrupt */
+	init_completion(&bs->done);
 	bcm_hsspi_writel(HSSPI_PING0_CMD_DONE, HSSPI_INT_MASK_REG);
 
 	/* start the transfer */
-	bcm_hsspi_writel(chip_select << PINGPONG_CMD_SS_SHIFT |
-			 chip_select << PINGPONG_CMD_PROFILE_SHIFT |
+	bcm_hsspi_writel(spi->chip_select << PINGPONG_CMD_SS_SHIFT |
+			 spi->chip_select << PINGPONG_CMD_PROFILE_SHIFT |
 			 PINGPONG_COMMAND_START_NOW,
 			 HSSPI_PINGPONG_COMMAND_REG(0));
 
@@ -123,7 +102,14 @@ static int bcm63xx_hsspi_do_txrx(struct spi_device *spi,
 		return -ETIMEDOUT;
 	}
 
-	return t1->len + (t2 ? t2->len : 0);
+	/* no opcode slot in RX RAM */
+	pos = 0;
+	list_for_each_entry(t, queue, transfer_list) {
+		if (t->rx_buf)
+			memcpy_fromio(t->rx_buf, &bs->fifo[pos], t->len);
+		pos += t->len;
+	}
+	return 0;
 }
 
 static int bcm63xx_hsspi_setup(struct spi_device *spi)
@@ -150,51 +136,40 @@ static int bcm63xx_hsspi_setup(struct spi_device *spi)
 static int bcm63xx_hsspi_transfer_one(struct spi_master *master,
 				      struct spi_message *msg)
 {
-	struct spi_transfer *t, *prev = NULL;
+	struct bcm63xx_hsspi *bs = spi_master_get_devdata(master);
+	struct spi_transfer *t;
 	struct spi_device *spi = msg->spi;
 	u32 reg;
 	int ret = -EINVAL;
-	int len = 0;
+	int len = 0, speed_hz = -1;
+
+	if (list_empty(&msg->transfers))
+		goto out;
 
 	/* check if we are able to make these transfers */
 	list_for_each_entry(t, &msg->transfers, transfer_list) {
 		if (!t->tx_buf && !t->rx_buf)
 			goto out;
 
-		if (t->speed_hz == 0)
-			t->speed_hz = spi->max_speed_hz;
-
-		if (t->speed_hz > spi->max_speed_hz)
+		/* can't change speed without deasserting CS */
+		if (speed_hz == -1 && t->speed_hz <= spi->max_speed_hz)
+			speed_hz = t->speed_hz;
+		else if (t->speed_hz != speed_hz)
 			goto out;
 
-		if (t->len > HSSPI_MAX_TX_LEN)
+		/* unsupported, for now */
+		if (t->cs_change)
 			goto out;
 
-		/*
-		 * This controller does not support keeping the chip select
-		 * active between transfers.
-		 * This logic currently supports combining:
-		 *  write then read with no cs_change (e.g. m25p80 RDSR)
-		 *  write then write with no cs_change (e.g. m25p80 PP)
-		 */
-		if (prev && prev->tx_buf && !prev->cs_change && !t->cs_change) {
-			/*
-			 * reject if we have to combine two tx transfers and
-			 * their combined length is bigger than the buffer
-			 */
-			if (prev->tx_buf && t->tx_buf &&
-			    (prev->len + t->len) > HSSPI_MAX_TX_LEN)
-				goto out;
-			/*
-			 * reject if we need write more than 15 bytes in read
-			 * then write.
-			 */
-			if (prev->tx_buf && t->rx_buf &&
-			    prev->len > HSSPI_MAX_PREPEND_LEN)
-				goto out;
-		}
-
+		/* we will write the entire chain as a single transaction */
+		len += t->len;
 	}
+
+	if (len > min(HSSPI_MAX_TX_LEN, HSSPI_MAX_RX_LEN))
+		goto out;
+
+	bcm63xx_hsspi_set_clk(bs, speed_hz ? : spi->max_speed_hz,
+		spi->chip_select);
 
 	/* setup clock polarity */
 	reg = bcm_hsspi_readl(HSSPI_GLOBAL_CTRL_REG);
@@ -203,41 +178,10 @@ static int bcm63xx_hsspi_transfer_one(struct spi_master *master,
 		reg |= GLOBAL_CTRL_CLK_POLARITY;
 	bcm_hsspi_writel(reg, HSSPI_GLOBAL_CTRL_REG);
 
-	list_for_each_entry(t, &msg->transfers, transfer_list) {
-		if (prev && prev->tx_buf && !prev->cs_change && !t->cs_change) {
-			/* combine write with following transfer */
-			ret = bcm63xx_hsspi_do_txrx(msg->spi, prev, t);
-			if (ret < 0)
-				goto out;
+	ret = bcm63xx_hsspi_do_txrx(msg->spi, &msg->transfers);
 
-			len += ret;
-			prev = NULL;
-			continue;
-		}
-
-		/* write the previous pending transfer */
-		if (prev != NULL) {
-			ret = bcm63xx_hsspi_do_txrx(msg->spi, prev, NULL);
-			if (ret < 0)
-				goto out;
-
-			len += ret;
-		}
-
-		prev = t;
-	}
-
-	/* do last pending transfer */
-	if (prev != NULL) {
-		ret = bcm63xx_hsspi_do_txrx(msg->spi, prev, NULL);
-		if (ret < 0)
-			goto out;
-		len += ret;
-	}
-
-	msg->actual_length = len;
-	ret = 0;
 out:
+	msg->actual_length = ret ? 0 : len;
 	msg->status = ret;
 	spi_finalize_current_message(master);
 	return 0;
@@ -254,9 +198,6 @@ static irqreturn_t bcm63xx_hsspi_interrupt(int irq, void *dev_id)
 	bcm_hsspi_writel(HSSPI_INT_CLEAR_ALL, HSSPI_INT_STATUS_REG);
 	bcm_hsspi_writel(0, HSSPI_INT_MASK_REG);
 
-	if (bs->curr_trans && bs->curr_trans->rx_buf)
-		memcpy_fromio(bs->curr_trans->rx_buf,  bs->fifo,
-			      bs->curr_trans->len);
 	complete(&bs->done);
 
 	return IRQ_HANDLED;
@@ -318,8 +259,6 @@ static int __devinit bcm63xx_hsspi_probe(struct platform_device *pdev)
 	bs->fifo = (u8 __iomem *)(bs->regs + HSSPI_FIFO_REG(0));
 
 	platform_set_drvdata(pdev, master);
-
-	bs->curr_trans = NULL;
 
 	/* Initialize the hardware */
 	bcm_hsspi_writel(0, HSSPI_INT_MASK_REG);

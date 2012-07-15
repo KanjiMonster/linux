@@ -42,6 +42,16 @@
 
 #define BCM63XX_CFE_MAGIC_OFFSET 0x4e0
 
+struct bcm_tag_contents {
+	unsigned int		start;
+	unsigned int		rootfsaddr;
+	unsigned int		kerneladdr;
+	unsigned int		kernellen;
+	unsigned int		totallen;
+	unsigned int		spareaddr;
+	int			seq_no;
+};
+
 static int bcm63xx_detect_cfe(struct mtd_info *master)
 {
 	char buf[9];
@@ -66,23 +76,74 @@ static int bcm63xx_detect_cfe(struct mtd_info *master)
 	return strncmp("CFE1CFE1", buf, 8);
 }
 
+static int bcm63xx_read_tag(struct mtd_info *master,
+	struct bcm_tag_contents *tag, loff_t offset)
+{
+	struct bcm_tag *buf;
+	size_t retlen;
+	int ret;
+	u32 computed_crc;
+
+	/* Allocate memory for buffer */
+	buf = vmalloc(sizeof(struct bcm_tag));
+	if (!buf)
+		return -ENOMEM;
+
+	/* Get the tag */
+	pr_info("Checking boot tag at offset 0x%x\n", (unsigned)offset);
+	ret = mtd_read(master, offset, sizeof(struct bcm_tag), &retlen,
+		       (void *)buf);
+
+	if (retlen != sizeof(struct bcm_tag) || ret < 0) {
+		vfree(buf);
+		return -EIO;
+	}
+
+	computed_crc = crc32_le(IMAGETAG_CRC_START, (u8 *)buf,
+				offsetof(struct bcm_tag, header_crc));
+	if (computed_crc != buf->header_crc) {
+		pr_warn("CFE boot tag CRC invalid (expected %08x, actual %08x)\n",
+			buf->header_crc, computed_crc);
+		vfree(buf);
+		return -EINVAL;
+	}
+
+	sscanf(buf->flash_image_start, "%u", &tag->rootfsaddr);
+	sscanf(buf->kernel_address, "%u", &tag->kerneladdr);
+	sscanf(buf->kernel_length, "%u", &tag->kernellen);
+	sscanf(buf->total_length, "%u", &tag->totallen);
+	sscanf(buf->dual_image, "%d", &tag->seq_no);
+
+	pr_info("Valid CFE boot tag v%s, sequence %d, board type %s\n",
+		buf->tag_version, tag->seq_no, buf->board_id);
+
+	tag->kerneladdr -= BCM63XX_EXTENDED_SIZE;
+	tag->rootfsaddr -= BCM63XX_EXTENDED_SIZE;
+	tag->totallen += sizeof(struct bcm_tag);
+
+	tag->start = offset;
+	tag->spareaddr = roundup(tag->totallen, master->erasesize) + tag->start;
+
+	vfree(buf);
+	return 0;
+}
+
 static int bcm63xx_parse_cfe_partitions(struct mtd_info *master,
 					struct mtd_partition **pparts,
 					struct mtd_part_parser_data *data)
 {
 	/* CFE, NVRAM and global Linux are always present */
 	int nrparts = 3, curpart = 0;
-	struct bcm_tag *buf;
 	struct mtd_partition *parts;
 	int ret;
-	size_t retlen;
 	unsigned int rootfsaddr, kerneladdr, spareaddr;
-	unsigned int rootfslen, kernellen, sparelen, totallen;
+	unsigned int rootfslen, kernellen, sparelen;
 	unsigned int cfelen, nvramlen;
 	unsigned int cfe_erasesize;
-	int i;
-	u32 computed_crc;
+	int i, try_flip, flipped = 0;
 	bool rootfs_first = false;
+	struct bcm_tag_contents pri, alt, *t = NULL;
+	unsigned int alttag_offset = master->size >> 1;
 
 	if (bcm63xx_detect_cfe(master))
 		return -EINVAL;
@@ -93,54 +154,49 @@ static int bcm63xx_parse_cfe_partitions(struct mtd_info *master,
 	cfelen = cfe_erasesize;
 	nvramlen = bcm63xx_nvram_get_psi_size() * 1024;
 	nvramlen = roundup(nvramlen, cfe_erasesize);
+	try_flip = bcm63xx_nvram_get_boot_image() == BCM63XX_BOOT_IMAGE_OLD;
 
-	/* Allocate memory for buffer */
-	buf = vmalloc(sizeof(struct bcm_tag));
-	if (!buf)
-		return -ENOMEM;
-
-	/* Get the tag */
-	ret = mtd_read(master, cfelen, sizeof(struct bcm_tag), &retlen,
-		       (void *)buf);
-
-	if (retlen != sizeof(struct bcm_tag)) {
-		vfree(buf);
-		return -EIO;
+	ret = bcm63xx_read_tag(master, &pri, cfelen);
+	if (ret) {
+		if (ret != -EINVAL) {
+			pr_warn("I/O error reading primary tag, aborting\n");
+			return ret;
+		} else {
+			if (!bcm63xx_read_tag(master, &alt, alttag_offset))
+				t = &alt;
+		}
+	} else {
+		t = &pri;
+		if (t->spareaddr <= alttag_offset) {
+			if (!bcm63xx_read_tag(master, &alt, alttag_offset)) {
+				if ((!try_flip && alt.seq_no > pri.seq_no) ||
+				    (try_flip && alt.seq_no <= pri.seq_no)) {
+					t = &alt;
+					flipped = try_flip;
+				}
+			}
+		}
 	}
 
-	computed_crc = crc32_le(IMAGETAG_CRC_START, (u8 *)buf,
-				offsetof(struct bcm_tag, header_crc));
-	if (computed_crc == buf->header_crc) {
-		char *boardid = &(buf->board_id[0]);
-		char *tagversion = &(buf->tag_version[0]);
-
-		sscanf(buf->flash_image_start, "%u", &rootfsaddr);
-		sscanf(buf->kernel_address, "%u", &kerneladdr);
-		sscanf(buf->kernel_length, "%u", &kernellen);
-		sscanf(buf->total_length, "%u", &totallen);
-
-		pr_info("CFE boot tag found with version %s and board type %s\n",
-			tagversion, boardid);
-
-		kerneladdr = kerneladdr - BCM63XX_EXTENDED_SIZE;
-		rootfsaddr = rootfsaddr - BCM63XX_EXTENDED_SIZE;
-		spareaddr = roundup(totallen, master->erasesize) + cfelen;
-
-		if (rootfsaddr < kerneladdr) {
+	if (t) {
+		pr_info("Using image at offset 0x%x%s\n", t->start,
+			flipped ? " (flipped via nvram)" : "");
+		spareaddr = t->spareaddr;
+		if (t->rootfsaddr < t->kerneladdr) {
 			/* default Broadcom layout */
-			rootfslen = kerneladdr - rootfsaddr;
+			rootfsaddr = t->rootfsaddr;
+			rootfslen = t->kerneladdr - t->rootfsaddr;
 			rootfs_first = true;
 		} else {
 			/* OpenWrt layout */
-			rootfsaddr = kerneladdr + kernellen;
+			rootfsaddr = t->kerneladdr + t->kernellen;
 			rootfslen = spareaddr - rootfsaddr;
 		}
+		kerneladdr = t->kerneladdr;
+		kernellen = t->kernellen;
 	} else {
-		pr_warn("CFE boot tag CRC invalid (expected %08x, actual %08x)\n",
-			buf->header_crc, computed_crc);
-		kernellen = 0;
-		rootfslen = 0;
-		rootfsaddr = 0;
+		rootfsaddr = kerneladdr = 0;
+		rootfslen = kernellen = 0;
 		spareaddr = cfelen;
 	}
 	sparelen = master->size - spareaddr - nvramlen;
@@ -154,10 +210,8 @@ static int bcm63xx_parse_cfe_partitions(struct mtd_info *master,
 
 	/* Ask kernel for more memory */
 	parts = kzalloc(sizeof(*parts) * nrparts + 10 * nrparts, GFP_KERNEL);
-	if (!parts) {
-		vfree(buf);
+	if (!parts)
 		return -ENOMEM;
-	}
 
 	/* Start building partition list */
 	parts[curpart].name = "CFE";
@@ -184,7 +238,7 @@ static int bcm63xx_parse_cfe_partitions(struct mtd_info *master,
 		parts[rootfspart].name = "rootfs";
 		parts[rootfspart].offset = rootfsaddr;
 		parts[rootfspart].size = rootfslen;
-		if (sparelen > 0  && !rootfs_first)
+		if (sparelen > 0 && !rootfs_first)
 			parts[rootfspart].size += sparelen;
 		curpart++;
 	}
@@ -207,7 +261,6 @@ static int bcm63xx_parse_cfe_partitions(struct mtd_info *master,
 		sparelen);
 
 	*pparts = parts;
-	vfree(buf);
 
 	return nrparts;
 };

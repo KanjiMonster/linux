@@ -402,6 +402,9 @@ static int m25p80_read(struct mtd_info *mtd, loff_t from, size_t len,
 
 	*retlen = 0;
 
+	/* leave room for command + 4-byte address + 1 dummy byte */
+	read_len -= 6;
+
 	for (off = 0; off < len && !ret; off += read_len) {
 		ret = __m25p80_read(flash, from + off, min(len - off, read_len),
 				    &part_len, buf + off);

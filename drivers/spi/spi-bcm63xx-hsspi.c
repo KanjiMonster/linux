@@ -72,22 +72,32 @@ static int bcm63xx_hsspi_do_txrx(struct spi_device *spi,
 	u16 pos;
 	u16 opcode;
 	struct spi_transfer *t;
-	int i;
+	int i, prepend_size = 0;
+
+	/* use the prepend feature for simple TX-then-RX, if possible */
+	if (first->tx_buf && !first->rx_buf && n_transfers > 1 &&
+	    first->len <= HSSPI_MAX_PREPEND_LEN)
+		prepend_size = first->len;
 
 	for (i = 0, t = first, pos = HSSPI_OPCODE_LEN; i < n_transfers; i++) {
-		if (t->tx_buf)
+		if (t->tx_buf) {
 			memcpy_toio(&bs->fifo[pos], t->tx_buf, t->len);
-		else
+			if (t != first)
+				prepend_size = 0;
+		} else
 			memset_io(&bs->fifo[pos], 0xff, t->len);
 		pos += t->len;
 		t = list_entry(t->transfer_list.next,
 			       struct spi_transfer, transfer_list);
 	}
 
-	opcode = cpu_to_be16(HSSPI_OP_READ_WRITE | (pos - HSSPI_OPCODE_LEN));
+	opcode = cpu_to_be16(prepend_size ?
+		HSSPI_OP_READ       | (pos - HSSPI_OPCODE_LEN - prepend_size) :
+		HSSPI_OP_READ_WRITE | (pos - HSSPI_OPCODE_LEN));
 	memcpy_toio(bs->fifo, &opcode, sizeof(opcode));
 
-	bcm_hsspi_writel(2 << MODE_CTRL_MULTIDATA_WR_STRT_SHIFT |
+	bcm_hsspi_writel(prepend_size << MODE_CTRL_PREPENDBYTE_CNT_SHIFT |
+			 2 << MODE_CTRL_MULTIDATA_WR_STRT_SHIFT |
 			 2 << MODE_CTRL_MULTIDATA_RD_STRT_SHIFT | 0xff,
 			 HSSPI_PROFILE_MODE_CTRL_REG(spi->chip_select));
 
@@ -106,11 +116,16 @@ static int bcm63xx_hsspi_do_txrx(struct spi_device *spi,
 		return -ETIMEDOUT;
 	}
 
-	/* no opcode slot in RX RAM */
+	/* byte 0 of RX RAM is the first READ_WRITE or non-PREPEND byte */
 	for (i = 0, t = first, pos = 0; i < n_transfers; i++) {
 		if (t->rx_buf)
 			memcpy_fromio(t->rx_buf, &bs->fifo[pos], t->len);
-		pos += t->len;
+
+		if (prepend_size)
+			prepend_size = 0;
+		else
+			pos += t->len;
+
 		t = list_entry(t->transfer_list.next,
 			       struct spi_transfer, transfer_list);
 	}
@@ -188,7 +203,7 @@ static int bcm63xx_hsspi_transfer_one(struct spi_master *master,
 		bcm63xx_hsspi_set_clk(bs, speed_hz ? : spi->max_speed_hz,
 			spi->chip_select);
 
-		/* setup clock polarity */
+		/* set up clock polarity */
 		reg = bcm_hsspi_readl(HSSPI_GLOBAL_CTRL_REG);
 		reg &= ~GLOBAL_CTRL_CLK_POLARITY;
 		if (spi->mode & SPI_CPOL)

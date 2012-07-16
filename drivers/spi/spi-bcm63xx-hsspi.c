@@ -65,19 +65,23 @@ static void bcm63xx_hsspi_set_clk(struct bcm63xx_hsspi *bs, int hz,
 }
 
 static int bcm63xx_hsspi_do_txrx(struct spi_device *spi,
-				 struct list_head *queue)
+				 struct spi_transfer *first,
+				 int n_transfers)
 {
 	struct bcm63xx_hsspi *bs = spi_master_get_devdata(spi->master);
-	u16 pos = HSSPI_OPCODE_LEN;
+	u16 pos;
 	u16 opcode;
 	struct spi_transfer *t;
+	int i;
 
-	list_for_each_entry(t, queue, transfer_list) {
+	for (i = 0, t = first, pos = HSSPI_OPCODE_LEN; i < n_transfers; i++) {
 		if (t->tx_buf)
 			memcpy_toio(&bs->fifo[pos], t->tx_buf, t->len);
 		else
 			memset_io(&bs->fifo[pos], 0xff, t->len);
 		pos += t->len;
+		t = list_entry(t->transfer_list.next,
+			       struct spi_transfer, transfer_list);
 	}
 
 	opcode = cpu_to_be16(HSSPI_OP_READ_WRITE | (pos - HSSPI_OPCODE_LEN));
@@ -103,11 +107,12 @@ static int bcm63xx_hsspi_do_txrx(struct spi_device *spi,
 	}
 
 	/* no opcode slot in RX RAM */
-	pos = 0;
-	list_for_each_entry(t, queue, transfer_list) {
+	for (i = 0, t = first, pos = 0; i < n_transfers; i++) {
 		if (t->rx_buf)
 			memcpy_fromio(t->rx_buf, &bs->fifo[pos], t->len);
 		pos += t->len;
+		t = list_entry(t->transfer_list.next,
+			       struct spi_transfer, transfer_list);
 	}
 	return 0;
 }
@@ -137,51 +142,75 @@ static int bcm63xx_hsspi_transfer_one(struct spi_master *master,
 				      struct spi_message *msg)
 {
 	struct bcm63xx_hsspi *bs = spi_master_get_devdata(master);
-	struct spi_transfer *t;
+	struct spi_transfer *t, *first;
 	struct spi_device *spi = msg->spi;
 	u32 reg;
-	int ret = -EINVAL;
-	int len = 0, speed_hz = -1;
+	int ret = -EINVAL, len, speed_hz, n_transfers;
+	const int max_len = min(HSSPI_MAX_TX_LEN, HSSPI_MAX_RX_LEN);
 
-	if (list_empty(&msg->transfers))
-		goto out;
+	msg->actual_length = 0;
 
-	/* check if we are able to make these transfers */
+	first = NULL;
+	len = 0;
+	speed_hz = 0;
+	n_transfers = 0;
+
 	list_for_each_entry(t, &msg->transfers, transfer_list) {
+		ret = -EINVAL;
+
 		if (!t->tx_buf && !t->rx_buf)
-			goto out;
+			break;
 
-		/* can't change speed without deasserting CS */
-		if (speed_hz == -1 && t->speed_hz <= spi->max_speed_hz)
-			speed_hz = t->speed_hz;
-		else if (t->speed_hz != speed_hz)
-			goto out;
-
-		/* unsupported, for now */
-		if (t->cs_change)
-			goto out;
-
-		/* we will write the entire chain as a single transaction */
 		len += t->len;
+		n_transfers++;
+
+		if (!speed_hz && t->speed_hz <= spi->max_speed_hz)
+			speed_hz = t->speed_hz;
+
+		if (!first)
+			first = t;
+
+		/* can we add the next spi_transfer into the same HW op? */
+		if (!list_is_last(&t->transfer_list, &msg->transfers)) {
+			struct spi_transfer *next = list_entry(
+				t->transfer_list.next, struct spi_transfer,
+				transfer_list);
+
+			if (!t->cs_change && !t->delay_usecs &&
+			    next->speed_hz == t->speed_hz &&
+			    len + next->len <= max_len)
+				continue;
+		}
+
+		if (len > max_len)
+			break;
+
+		bcm63xx_hsspi_set_clk(bs, speed_hz ? : spi->max_speed_hz,
+			spi->chip_select);
+
+		/* setup clock polarity */
+		reg = bcm_hsspi_readl(HSSPI_GLOBAL_CTRL_REG);
+		reg &= ~GLOBAL_CTRL_CLK_POLARITY;
+		if (spi->mode & SPI_CPOL)
+			reg |= GLOBAL_CTRL_CLK_POLARITY;
+		bcm_hsspi_writel(reg, HSSPI_GLOBAL_CTRL_REG);
+
+		ret = bcm63xx_hsspi_do_txrx(msg->spi, first, n_transfers);
+
+		if (ret == 0)
+			msg->actual_length += len;
+		else
+			break;
+
+		if (t->delay_usecs)
+			udelay(t->delay_usecs);
+
+		first = NULL;
+		len = 0;
+		speed_hz = 0;
+		n_transfers = 0;
 	}
 
-	if (len > min(HSSPI_MAX_TX_LEN, HSSPI_MAX_RX_LEN))
-		goto out;
-
-	bcm63xx_hsspi_set_clk(bs, speed_hz ? : spi->max_speed_hz,
-		spi->chip_select);
-
-	/* setup clock polarity */
-	reg = bcm_hsspi_readl(HSSPI_GLOBAL_CTRL_REG);
-	reg &= ~GLOBAL_CTRL_CLK_POLARITY;
-	if (spi->mode & SPI_CPOL)
-		reg |= GLOBAL_CTRL_CLK_POLARITY;
-	bcm_hsspi_writel(reg, HSSPI_GLOBAL_CTRL_REG);
-
-	ret = bcm63xx_hsspi_do_txrx(msg->spi, &msg->transfers);
-
-out:
-	msg->actual_length = ret ? 0 : len;
 	msg->status = ret;
 	spi_finalize_current_message(master);
 	return 0;

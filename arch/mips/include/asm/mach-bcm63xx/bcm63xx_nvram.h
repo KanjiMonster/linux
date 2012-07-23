@@ -10,7 +10,7 @@
  */
 struct bcm963xx_nvram {
 	u32	version;
-	u8	reserved1[256];
+	u8	boot_info[256];
 	u8	name[BCM63XX_NVRAM_NAMELEN];
 	u32	main_tp_number;
 	u32	psi_size;
@@ -32,5 +32,27 @@ u8 *bcm63xx_nvram_get_name(void);
 int bcm63xx_nvram_get_mac_address(u8 *mac);
 
 int bcm63xx_nvram_get_psi_size(void);
+
+/*
+ * determine whether CFE booted the current or previous image
+ */
+
+#define BCM63XX_BOOT_IMAGE_UNKNOWN	0
+#define BCM63XX_BOOT_IMAGE_NEW		1
+#define BCM63XX_BOOT_IMAGE_OLD		2
+#define BCM63XX_BOOT_IMAGE_ONLY		3
+
+int bcm63xx_nvram_get_boot_image(void);
+
+/*
+ * bootloader parameters passed in RAM (only on newer CFEs)
+ */
+
+#define BCM63XX_BLPARMS_MAGIC		0x424c504d
+
+struct bcm63xx_blparms {
+	u32	magic;
+	u32	buf_ptr;
+};
 
 #endif /* BCM63XX_NVRAM_H */

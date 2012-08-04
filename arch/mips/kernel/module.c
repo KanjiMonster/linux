@@ -65,12 +65,14 @@ static int apply_r_mips_32_rel(struct module *me, u32 *location, Elf_Addr v)
 	return 0;
 }
 
+#ifdef CONFIG_MODULES_USE_ELF_RELA
 static int apply_r_mips_32_rela(struct module *me, u32 *location, Elf_Addr v)
 {
 	*location = v;
 
 	return 0;
 }
+#endif
 
 static int apply_r_mips_26_rel(struct module *me, u32 *location, Elf_Addr v)
 {
@@ -93,6 +95,7 @@ static int apply_r_mips_26_rel(struct module *me, u32 *location, Elf_Addr v)
 	return 0;
 }
 
+#ifdef CONFIG_MODULES_USE_ELF_RELA
 static int apply_r_mips_26_rela(struct module *me, u32 *location, Elf_Addr v)
 {
 	if (v % 4) {
@@ -112,6 +115,7 @@ static int apply_r_mips_26_rela(struct module *me, u32 *location, Elf_Addr v)
 
 	return 0;
 }
+#endif
 
 static int apply_r_mips_hi16_rel(struct module *me, u32 *location, Elf_Addr v)
 {
@@ -134,6 +138,7 @@ static int apply_r_mips_hi16_rel(struct module *me, u32 *location, Elf_Addr v)
 	return 0;
 }
 
+#ifdef CONFIG_MODULES_USE_ELF_RELA
 static int apply_r_mips_hi16_rela(struct module *me, u32 *location, Elf_Addr v)
 {
 	*location = (*location & 0xffff0000) |
@@ -141,6 +146,7 @@ static int apply_r_mips_hi16_rela(struct module *me, u32 *location, Elf_Addr v)
 
 	return 0;
 }
+#endif
 
 static int apply_r_mips_lo16_rel(struct module *me, u32 *location, Elf_Addr v)
 {
@@ -206,6 +212,7 @@ out_danger:
 	return -ENOEXEC;
 }
 
+#ifdef CONFIG_MODULES_USE_ELF_RELA
 static int apply_r_mips_lo16_rela(struct module *me, u32 *location, Elf_Addr v)
 {
 	*location = (*location & 0xffff0000) | (v & 0xffff);
@@ -237,6 +244,7 @@ static int apply_r_mips_highest_rela(struct module *me, u32 *location,
 
 	return 0;
 }
+#endif
 
 static int (*reloc_handlers_rel[]) (struct module *me, u32 *location,
 				Elf_Addr v) = {
@@ -247,6 +255,7 @@ static int (*reloc_handlers_rel[]) (struct module *me, u32 *location,
 	[R_MIPS_LO16]		= apply_r_mips_lo16_rel
 };
 
+#ifdef CONFIG_MODULES_USE_ELF_RELA
 static int (*reloc_handlers_rela[]) (struct module *me, u32 *location,
 				Elf_Addr v) = {
 	[R_MIPS_NONE]		= apply_r_mips_none,
@@ -258,6 +267,7 @@ static int (*reloc_handlers_rela[]) (struct module *me, u32 *location,
 	[R_MIPS_HIGHER]		= apply_r_mips_higher_rela,
 	[R_MIPS_HIGHEST]	= apply_r_mips_highest_rela
 };
+#endif
 
 int apply_relocate(Elf_Shdr *sechdrs, const char *strtab,
 		   unsigned int symindex, unsigned int relsec,

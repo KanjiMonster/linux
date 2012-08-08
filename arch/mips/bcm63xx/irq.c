@@ -12,6 +12,8 @@
 #include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/irq.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
 #include <asm/irq_cpu.h>
 #include <asm/mipsregs.h>
 #include <bcm63xx_cpu.h>
@@ -515,6 +517,34 @@ static struct irqaction cpu_ext_cascade_action = {
 	.flags		= IRQF_NO_THREAD,
 };
 
+static int __init bcm63xx_ipic_of_init(struct device_node *node,
+				       struct device_node *parent)
+{
+	if (!irq_domain_add_simple(node,
+				   IRQ_EXTERNAL_BASE - IRQ_INTERNAL_BASE,
+				   IRQ_INTERNAL_BASE, &irq_domain_simple_ops,
+				   NULL))
+		panic("unable to add ipic domain!\n");
+
+	return 0;
+}
+
+static int __init bcm63xx_epic_of_init(struct device_node *node,
+				       struct device_node *parent)
+{
+	if (!irq_domain_add_simple(node, ext_irq_count, IRQ_EXTERNAL_BASE,
+				   &irq_domain_simple_ops, NULL))
+		panic("unable to add epic domain!\n");
+
+	return 0;
+}
+
+static const struct of_device_id bcm63xx_pic_of_match[] __initconst = {
+	{ .compatible = "brcm,bcm63xx-ipic", .data = bcm63xx_ipic_of_init },
+	{ .compatible = "brcm,bcm63xx-epic", .data = bcm63xx_epic_of_init },
+	{ },
+};
+
 void __init arch_init_irq(void)
 {
 	int i;
@@ -535,4 +565,6 @@ void __init arch_init_irq(void)
 	}
 
 	setup_irq(MIPS_CPU_IRQ_BASE + 2, &cpu_ip2_cascade_action);
+
+	of_irq_init(bcm63xx_pic_of_match);
 }

@@ -1,0 +1,20 @@
+* Broadcom BCM63XX External Interrupt Controller
+
+Properties:
+- compatible: "brcm,bcm63xx-epic"
+  Compatible with all bcm63xx SoCs.
+
+- interrupt-controller: This is an interrupt controller.
+
+- #interrupt-cells: <2>
+  This controller supports level and edge triggered interrupts. The
+  first cell is the interrupt number, the second is a 1:1 mapping to
+  the linux interrupt flags.
+
+Example:
+
+	epic: interrupt-controller@18 {
+		compatible = "brcm,bcm63xx-epic";
+		interrupt-controller;
+		#interrupt-cells = <2>;
+	}

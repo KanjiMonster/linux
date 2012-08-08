@@ -16,5 +16,21 @@
 		#size-cells = <1>;
 		ranges = <0 0xb0000000 0x20000>;
 		compatible = "simple-bus";
+
+		interrupt-parent = <&ipic>;
+
+		perf@0 {
+			epic: epic {
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				compatible = "brcm,bcm63xx-epic";
+			};
+
+			ipic: ipic {
+				interrupt-controller;
+				#interrupt-cells = <1>;
+				compatible = "brcm,bcm63xx-ipic";
+			};
+		};
 	};
 };

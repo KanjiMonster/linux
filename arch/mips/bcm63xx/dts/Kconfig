@@ -1,3 +1,67 @@
 menu "Built-in Device Tree support"
 
+config BOARD_96328AVNG
+	bool "96328avng reference board"
+	select BCM63XX_CPU_6328
+
+config BOARD_96338GW
+	bool "96338GW reference board"
+	select BCM63XX_CPU_6338
+
+config BOARD_96338W
+	bool "96338W reference board"
+	select BCM63XX_CPU_6338
+
+config BOARD_96345GW2
+	bool "96345GW2 reference board"
+	select BCM63XX_CPU_6345
+
+config BOARD_96348R
+	bool "96348R reference board"
+	select BCM63XX_CPU_6348
+
+config BOARD_96348GW
+	bool "96348GW reference board"
+	select BCM63XX_CPU_6348
+
+config BOARD_96348GW_10
+	bool "96348GW-10 reference board"
+	select BCM63XX_CPU_6348
+
+config BOARD_96348GW_11
+	bool "96348GW-11 reference board"
+	select BCM63XX_CPU_6348
+
+config BOARD_96348GW_A
+	bool "96348GW-A reference board"
+	select BCM63XX_CPU_6348
+
+config BOARD_96358VW
+	bool "96358VW2 reference board"
+	select BCM63XX_CPU_6358
+
+config BOARD_96358VW2
+	bool "96358VW2 reference board"
+	select BCM63XX_CPU_6358
+
+config BOARD_AGPF_S0
+	bool "AGPF-S0 (Pirelli Alice Gate VoIP 2 Plus Wi-Fi Business)"
+	select BCM63XX_CPU_6358
+
+config BOARD_DV201AMR
+	bool "DV201AMR (Davolink DV-201AMR)"
+	select BCM63XX_CPU_6348
+
+config BOARD_DWV_S0
+	bool "DWV-S0 (Pirelli A226G)"
+	select BCM63XX_CPU_6358
+
+config BOARD_FAST2404
+	bool "F@ST2404 (Sagem F@ST2404)"
+	select BCM63XX_CPU_6348
+
+config BOARD_RTA2015W_16
+	bool "RTA2015W_16 (Dynalink RTA2015W)"
+	select BCM63XX_CPU_6348
+
 endmenu

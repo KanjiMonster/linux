@@ -1,0 +1,22 @@
+/dts-v1/;
+
+/*
+ * Device Tree Source for Broadcom BCM96338GW reference board
+ *
+ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
+ *
+ * This file is licensed under the terms of the GNU General Public License
+ * version 2.  This program is licensed "as is" without any warranty of any
+ * kind, whether express or implied.
+ */
+
+/include/ "bcm6338.dtsi"
+
+/ {
+	model = "96338GW";
+	compatible = "96338GW";
+
+	ubus@fffe0000 {
+
+	};
+};

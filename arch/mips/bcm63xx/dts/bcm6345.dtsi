@@ -1,0 +1,30 @@
+/*
+ * Device Tree Include file for Broadcom BCM6345 SoC
+ *
+ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
+ *
+ * This file is licensed under the terms of the GNU General Public License
+ * version 2.  This program is licensed "as is" without any warranty of any
+ * kind, whether express or implied.
+ */
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	compatible = "brcm,bcm6345";
+
+	cpus {
+		cpu@0 {
+			compatible = "brcm,bmips3300", "mips,mips4Kc";
+		};
+	};
+
+	memory { device_type = "memory"; reg = <0 0>; };
+
+	ubus@fffe0000 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0 0xfffe0000 0x20000>;
+		compatible = "simple-bus";
+	};
+};

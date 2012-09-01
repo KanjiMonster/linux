@@ -31,3 +31,5 @@ config BCM63XX_CPU_6368
 endmenu
 
 source "arch/mips/bcm63xx/boards/Kconfig"
+
+source "arch/mips/bcm63xx/dts/Kconfig"

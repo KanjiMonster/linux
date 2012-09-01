@@ -132,6 +132,7 @@ config BCM63XX
 	select SWAP_IO_SPACE
 	select ARCH_REQUIRE_GPIOLIB
 	select HAVE_CLK
+	select USE_OF
 	help
 	 Support for BCM63XX based boards
 

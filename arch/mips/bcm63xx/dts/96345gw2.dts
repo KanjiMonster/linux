@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/include/ "bcm6345.dtsi"
+
+/ {
+	model = "96345GW2";
+	compatible = "brcm,96345GW2";
+
+	ubus@fffe0000 {
+
+	};
+};

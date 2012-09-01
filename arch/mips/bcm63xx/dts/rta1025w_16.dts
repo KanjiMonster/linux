@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/include/ "bcm6348.dtsi"
+
+/ {
+	model = "RTA1025W_16";
+	compatible = "brcm,RTA1025W_16";
+
+	ubus@fffe0000 {
+
+	};
+};

@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/include/ "bcm6358.dtsi"
+
+/ {
+	model = "AGPF-S0";
+	compatible = "brcm,AGPF-S0";
+
+	ubus@fffe0000 {
+
+	};
+};

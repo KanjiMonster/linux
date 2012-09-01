@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/include/ "bcm6358.dtsi"
+
+/ {
+	model = "DWV-S0";
+	compatible = "brcm,DWV-S0";
+
+	ubus@fffe0000 {
+
+	};
+};

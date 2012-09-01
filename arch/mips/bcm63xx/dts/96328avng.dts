@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/include/ "bcm6328.dtsi"
+
+/ {
+	model = "96328avng";
+	compatible = "brcm,96328avng";
+
+	ubus@b0000000 {
+
+	};
+};

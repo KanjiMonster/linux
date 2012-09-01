@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/include/ "bcm6348.dtsi"
+
+/ {
+	model = "F@ST2404";
+	compatible = "brcm,F@ST2404";
+
+	ubus@fffe0000 {
+
+	};
+};

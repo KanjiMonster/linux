@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/include/ "bcm6358.dtsi"
+
+/ {
+	model = "96358VW";
+	compatible = "brcm,96358VW";
+
+	ubus@fffe0000 {
+
+	};
+};

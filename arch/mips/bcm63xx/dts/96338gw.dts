@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/include/ "bcm6338.dtsi"
+
+/ {
+	model = "96338GW";
+	compatible = "brcm,96338GW";
+
+	ubus@fffe0000 {
+
+	};
+};

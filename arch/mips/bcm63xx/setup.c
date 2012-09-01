@@ -4,6 +4,7 @@
  * for more details.
  *
  * Copyright (C) 2008 Maxime Bizon <mbizon@freebox.fr>
+ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
  */
 
 #include <linux/init.h>
@@ -12,6 +13,8 @@
 #include <linux/bootmem.h>
 #include <linux/ioport.h>
 #include <linux/pm.h>
+#include <linux/of_fdt.h>
+#include <linux/of_platform.h>
 #include <asm/bootinfo.h>
 #include <asm/time.h>
 #include <asm/reboot.h>
@@ -145,6 +148,87 @@ void __init plat_mem_setup(void)
 
 	board_setup();
 }
+
+extern struct boot_param_header __dtb_start;
+extern struct boot_param_header __dtb_end;
+
+int __init bcm63xx_is_compatible(struct boot_param_header *devtree,
+				   const char *compat)
+{
+	unsigned long dt_root;
+	struct boot_param_header *old_ibp;
+	int ret;
+
+	old_ibp = initial_boot_params;
+	initial_boot_params = devtree;
+	dt_root = of_get_flat_dt_root();
+
+	ret = of_flat_dt_is_compatible(dt_root, compat);
+
+	initial_boot_params = old_ibp;
+
+	return ret;
+}
+
+static struct of_device_id of_ids[] = {
+	{ },
+	{ .compatible = "simple-bus" },
+	{ },
+};
+
+static struct boot_param_header *find_compatible_tree(const char *compat)
+{
+	struct boot_param_header *curr = &__dtb_start;
+
+	while (curr < &__dtb_end) {
+		if (be32_to_cpu(curr->magic) != OF_DT_HEADER)
+			continue;
+
+		if (bcm63xx_is_compatible(curr, compat))
+			return curr;
+
+		/* in-kernel dtbs are aligned to 32 byte */
+		curr = (void *)curr + roundup(curr->totalsize, 32);
+	}
+
+	return NULL;
+}
+
+void __init device_tree_init(void)
+{
+	struct boot_param_header *bph, *devtree = NULL;
+	const char *name = board_get_name();
+
+	snprintf(of_ids[0].compatible, sizeof(of_ids[0].compatible),
+		 "brcm,%s", name);
+
+	devtree = find_compatible_tree(of_ids[0].compatible);
+
+	if (devtree == NULL) {
+		pr_warn("no compatible device tree found for board %s\n", name);
+		return;
+	}
+
+	bph = early_init_dt_alloc_memory_arch(devtree->totalsize, 8);
+	if (!bph)
+		panic("failed to allocate memory for device tree");
+
+	memcpy(bph, devtree, devtree->totalsize);
+	__dt_setup_arch(bph);
+
+	unflatten_device_tree();
+}
+
+int __init bcm63xx_populate_device_tree(void)
+{
+	if (!of_have_populated_dt()) {
+		pr_warn("device tree not available\n");
+		return -ENODEV;
+	}
+
+	return of_platform_populate(NULL, of_ids, NULL, NULL);
+}
+arch_initcall(bcm63xx_populate_device_tree);
 
 int __init bcm63xx_register_devices(void)
 {

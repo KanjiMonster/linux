@@ -31,6 +31,104 @@
 				#interrupt-cells = <1>;
 				compatible = "brcm,bcm63xx-ipic";
 			};
+
+			clocks {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				periph: periph {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-frequency = <50000000>;
+					clock-output-names = "periph";
+				};
+
+				phymips: phymips {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "phymips";
+					brcm,gate-bit = <0>;
+				};
+
+				adsl_qproc: adsl_qproc {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "adsl-qproc";
+					brcm,gate-bit = <1>;
+				};
+
+				adsl_afe: adsl_afe {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "adsl-afe";
+					brcm,gate-bit = <2>;
+				};
+
+				adsl: adsl {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "adsl";
+					brcm,gate-bit = <3>;
+				};
+
+				mips: mips {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "mips";
+					brcm,gate-bit = <4>;
+				};
+
+				sar: sar {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "sar";
+					brcm,gate-bit = <5>;
+				};
+
+				pcm: pcm {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "pcm";
+					brcm,gate-bit = <6>;
+				};
+
+				usbd: usbd {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "usbd";
+					brcm,gate-bit = <7>;
+				};
+
+				usbh: usbh {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "usbh";
+					brcm,gate-bit = <8>;
+				};
+
+				hsspi: hsspi {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "hsspi";
+					brcm,gate-bit = <9>;
+					clock-frequency = <133333333>;
+				};
+
+				pcie: pcie {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "pcie";
+					brcm,gate-bit = <10>;
+				};
+
+				enetsw: enetsw {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "enetsw";
+					brcm,gate-bit = <11>;
+				};
+
+			};
 		};
 	};
 };

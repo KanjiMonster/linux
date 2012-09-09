@@ -122,7 +122,7 @@ static int __devinit bcm63xx_rng_probe(struct platform_device *pdev)
 		goto out_free_rng;
 	}
 
-	clk_enable(clk);
+	clk_prepare_enable(clk);
 
 	ret = hwrng_register(rng);
 	if (ret) {
@@ -135,7 +135,7 @@ static int __devinit bcm63xx_rng_probe(struct platform_device *pdev)
 	return 0;
 
 out_clk_disable:
-	clk_disable(clk);
+	clk_disable_unprepare(clk);
 out_free_rng:
 	platform_set_drvdata(pdev, NULL);
 	kfree(rng);
@@ -151,7 +151,7 @@ static int __devexit bcm63xx_rng_remove(struct platform_device *pdev)
 	struct bcm63xx_rng_priv *priv = to_rng_priv(rng);
 
 	hwrng_unregister(rng);
-	clk_disable(priv->clk);
+	clk_disable_unprepare(priv->clk);
 	kfree(priv);
 	kfree(rng);
 	platform_set_drvdata(pdev, NULL);

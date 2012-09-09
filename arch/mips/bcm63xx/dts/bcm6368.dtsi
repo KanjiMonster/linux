@@ -44,6 +44,131 @@
 				interrupt-controller;
 				#interrupt-cells = <1>;
 			};
+
+			clocks {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				periph: pll {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-frequency = <50000000>;
+					clock-output-names = "periph";
+				};
+
+				vdsl_qproc: clock@2 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "vdsl-qproc";
+					brcm,gate-bit = <2>;
+				};
+
+				vdsl_afe: clock@3 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "vdsl-afe";
+					brcm,gate-bit = <3>;
+				};
+
+				vdsl_bonding: clock@4 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "vdsl-bonding";
+					brcm,gate-bit = <4>;
+				};
+
+				vdsl: clock@5 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "vdsl";
+					brcm,gate-bit = <5>;
+				};
+
+				phymips: clock@6 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "phymips";
+					brcm,gate-bit = <6>;
+				};
+
+				enetsw_usb: clock@7 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "enetsw-usb";
+					brcm,gate-bit = <7>;
+				};
+
+				enetsw_sar: clock@8 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "enetsw-sar";
+					brcm,gate-bit = <8>;
+				};
+
+				spi: clock@9 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "spi";
+					brcm,gate-bit = <9>;
+				};
+
+				usbd: clock@10 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "usbd";
+					brcm,gate-bit = <10>;
+				};
+
+				sar: clock@11 {
+					compatible = "brcm,bcm63xx-sar-clock";
+					#clock-cells = <1>;
+					clocks = <&enetsw_sar>;
+					clock-output-names = "sar";
+					brcm,gate-bit = <11>;
+				};
+
+				enetsw: clock@12 {
+					compatible = "brcm,bcm6368-enetsw-clock";
+					#clock-cells = <0>;
+					clock-output-names = "enetsw";
+					brcm,gate-bit = <12>;
+				};
+
+				utopia: clock@13 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "utopia";
+					brcm,gate-bit = <13>;
+				};
+
+				pcm: clock@14 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "pcm";
+					brcm,gate-bit = <14>;
+				};
+
+				usbh: clock@15 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "usbh";
+					brcm,gate-bit = <15>;
+				};
+
+				nand: clock@17 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "nand";
+					brcm,gate-bit = <17>;
+				};
+
+				ipsec: clock@18 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "ipsec";
+					brcm,gate-bit = <18>;
+				};
+			};
 		};
 	};
 };

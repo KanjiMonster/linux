@@ -41,6 +41,53 @@
 				interrupt-controller;
 				#interrupt-cells = <2>;
 			};
+
+			clocks {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				periph: pll {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-frequency = <50000000>;
+					clock-output-names = "periph";
+				};
+
+				adsl: clock@0 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "adsl";
+					brcm,gate-bit = <0>;
+				};
+
+				mpi: clock@1 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "mpi";
+					brcm,gate-bit = <1>;
+				};
+
+				enet_usbd: clock@5 {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "enet", "enet0", "usbd";
+					brcm,gate-bit = <5>;
+				};
+
+				sar: clock@6 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "sar", "atm";
+					brcm,gate-bit = <6>;
+				};
+
+				spi: clock@7 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "spi";
+					brcm,gate-bit = <9>;
+				};
+			};
 		};
 	};
 };

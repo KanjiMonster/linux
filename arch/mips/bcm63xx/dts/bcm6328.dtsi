@@ -41,6 +41,96 @@
 				interrupt-controller;
 				#interrupt-cells = <1>;
 			};
+
+			clocks {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				periph: pll {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-frequency = <50000000>;
+					clock-output-names = "periph";
+				};
+
+				phymips: clock@0 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "phymips";
+					brcm,gate-bit = <0>;
+				};
+
+				adsl_qproc: clock@1 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "adsl-qproc";
+					brcm,gate-bit = <1>;
+				};
+
+				adsl_afe: clock@2 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "adsl-afe";
+					brcm,gate-bit = <2>;
+				};
+
+				adsl: clock@3 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "adsl";
+					brcm,gate-bit = <3>;
+				};
+
+				sar: clock@5 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "sar", "xtm";
+					brcm,gate-bit = <5>;
+				};
+
+				pcm: clock@6 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "pcm";
+					brcm,gate-bit = <6>;
+				};
+
+				usbd: clock@7 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "usbd";
+					brcm,gate-bit = <7>;
+				};
+
+				usbh: clock@8 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "usbh";
+					brcm,gate-bit = <8>;
+				};
+
+				hsspi: clock@9 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "hsspi";
+					clock-frequency = <133333333>;
+					brcm,gate-bit = <9>;
+				};
+
+				pcie: clock@10 {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "pcie";
+					brcm,gate-bit = <10>;
+				};
+
+				enetsw: clock@11 {
+					compatible = "brcm,bcm63xx-enetsw-clock";
+					#clock-cells = <0>;
+					clock-output-names = "enetsw";
+					brcm,gate-bit = <11>;
+				};
+			};
 		};
 	};
 };

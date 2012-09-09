@@ -31,6 +31,39 @@
 				#interrupt-cells = <1>;
 				compatible = "brcm,bcm63xx-ipic";
 			};
+
+			clocks {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				periph: periph {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-frequency = <50000000>;
+					clock-output-names = "periph";
+				};
+
+				adsl: adsl {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "adsl";
+					brcm,gate-bit = <4>;
+				};
+
+				enet: enet {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "enet", "enet0";
+					brcm,gate-bit = <5>;
+				};
+
+				usb: usb {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "usb";
+					brcm,gate-bit = <6>;
+				};
+			};
 		};
 	};
 };

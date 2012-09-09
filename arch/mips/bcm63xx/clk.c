@@ -3,323 +3,164 @@
  * License.  See the file "COPYING" in the main directory of this archive
  * for more details.
  *
- * Copyright (C) 2008 Maxime Bizon <mbizon@freebox.fr>
+ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
  */
 
-#include <linux/module.h>
-#include <linux/mutex.h>
-#include <linux/err.h>
+#include <linux/kernel.h>
+#include <linux/slab.h>
 #include <linux/clk.h>
-#include <linux/delay.h>
+#include <linux/clkdev.h>
+#include <linux/clk-provider.h>
+#include <linux/of.h>
+
 #include <bcm63xx_cpu.h>
 #include <bcm63xx_io.h>
 #include <bcm63xx_regs.h>
-#include <bcm63xx_clk.h>
 
-static DEFINE_MUTEX(clocks_mutex);
+DEFINE_SPINLOCK(bcm63xx_clk_lock);
 
+struct bcm63xx_clk {
+	struct clk_hw hw;
+	u32 rate;
+	s8 gate_bit;
+};
 
-static void clk_enable_unlocked(struct clk *clk)
+#define to_bcm63xx_clk(p) container_of(p, struct bcm63xx_clk, hw)
+
+static void bcm63xx_clk_set(u32 bit, int enable)
 {
-	if (clk->set && (clk->usage++) == 0)
-		clk->set(clk, 1);
-}
+	unsigned long flags;
+	u32 val;
 
-static void clk_disable_unlocked(struct clk *clk)
-{
-	if (clk->set && (--clk->usage) == 0)
-		clk->set(clk, 0);
-}
+	spin_lock_irqsave(&bcm63xx_clk_lock, flags);
 
-static void bcm_hwclock_set(u32 mask, int enable)
-{
-	u32 reg;
-
-	reg = bcm_perf_readl(PERF_CKCTL_REG);
+	val = bcm_perf_readl(PERF_CKCTL_REG);
 	if (enable)
-		reg |= mask;
+		val |= BIT(bit);
 	else
-		reg &= ~mask;
-	bcm_perf_writel(reg, PERF_CKCTL_REG);
+		val &= ~BIT(bit);
+
+	bcm_perf_writel(val, PERF_CKCTL_REG);
+
+	spin_unlock_irqrestore(&bcm63xx_clk_lock, flags);
+
 }
 
-/*
- * Ethernet MAC "misc" clock: dma clocks and main clock on 6348
- */
-static void enet_misc_set(struct clk *clk, int enable)
+static int bcm63xx_clk_enable(struct clk_hw *hw)
 {
-	u32 mask;
+	struct bcm63xx_clk *clk = to_bcm63xx_clk(hw);
 
-	if (BCMCPU_IS_6338())
-		mask = CKCTL_6338_ENET_EN;
-	else if (BCMCPU_IS_6345())
-		mask = CKCTL_6345_ENET_EN;
-	else if (BCMCPU_IS_6348())
-		mask = CKCTL_6348_ENET_EN;
-	else
-		/* BCMCPU_IS_6358 */
-		mask = CKCTL_6358_EMUSB_EN;
-	bcm_hwclock_set(mask, enable);
-}
+	if (clk->gate_bit >= 0)
+		bcm63xx_clk_set(clk->gate_bit, 1);
 
-static struct clk clk_enet_misc = {
-	.set	= enet_misc_set,
-};
-
-/*
- * Ethernet MAC clocks: only revelant on 6358, silently enable misc
- * clocks
- */
-static void enetx_set(struct clk *clk, int enable)
-{
-	if (enable)
-		clk_enable_unlocked(&clk_enet_misc);
-	else
-		clk_disable_unlocked(&clk_enet_misc);
-
-	if (BCMCPU_IS_6358()) {
-		u32 mask;
-
-		if (clk->id == 0)
-			mask = CKCTL_6358_ENET0_EN;
-		else
-			mask = CKCTL_6358_ENET1_EN;
-		bcm_hwclock_set(mask, enable);
-	}
-}
-
-static struct clk clk_enet0 = {
-	.id	= 0,
-	.set	= enetx_set,
-};
-
-static struct clk clk_enet1 = {
-	.id	= 1,
-	.set	= enetx_set,
-};
-
-/*
- * Ethernet PHY clock
- */
-static void ephy_set(struct clk *clk, int enable)
-{
-	if (!BCMCPU_IS_6358())
-		return;
-	bcm_hwclock_set(CKCTL_6358_EPHY_EN, enable);
-}
-
-
-static struct clk clk_ephy = {
-	.set	= ephy_set,
-};
-
-/*
- * Ethernet switch clock
- */
-static void enetsw_set(struct clk *clk, int enable)
-{
-	if (!BCMCPU_IS_6368())
-		return;
-	bcm_hwclock_set(CKCTL_6368_ROBOSW_EN |
-			CKCTL_6368_SWPKT_USB_EN |
-			CKCTL_6368_SWPKT_SAR_EN, enable);
-	if (enable) {
-		u32 val;
-
-		/* reset switch core afer clock change */
-		val = bcm_perf_readl(PERF_SOFTRESET_6368_REG);
-		val &= ~SOFTRESET_6368_ENETSW_MASK;
-		bcm_perf_writel(val, PERF_SOFTRESET_6368_REG);
-		msleep(10);
-		val |= SOFTRESET_6368_ENETSW_MASK;
-		bcm_perf_writel(val, PERF_SOFTRESET_6368_REG);
-		msleep(10);
-	}
-}
-
-static struct clk clk_enetsw = {
-	.set	= enetsw_set,
-};
-
-/*
- * PCM clock
- */
-static void pcm_set(struct clk *clk, int enable)
-{
-	if (!BCMCPU_IS_6358())
-		return;
-	bcm_hwclock_set(CKCTL_6358_PCM_EN, enable);
-}
-
-static struct clk clk_pcm = {
-	.set	= pcm_set,
-};
-
-/*
- * USB host clock
- */
-static void usbh_set(struct clk *clk, int enable)
-{
-	if (BCMCPU_IS_6328())
-		bcm_hwclock_set(CKCTL_6328_USBH_EN, enable);
-	else if (BCMCPU_IS_6348())
-		bcm_hwclock_set(CKCTL_6348_USBH_EN, enable);
-	else if (BCMCPU_IS_6368())
-		bcm_hwclock_set(CKCTL_6368_USBH_EN, enable);
-}
-
-static struct clk clk_usbh = {
-	.set	= usbh_set,
-};
-
-/*
- * USB device clock
- */
-static void usbd_set(struct clk *clk, int enable)
-{
-	if (BCMCPU_IS_6328())
-		bcm_hwclock_set(CKCTL_6328_USBD_EN, enable);
-	else if (BCMCPU_IS_6368())
-		bcm_hwclock_set(CKCTL_6368_USBD_EN, enable);
-}
-
-static struct clk clk_usbd = {
-	.set	= usbd_set,
-};
-
-/*
- * SPI clock
- */
-static void spi_set(struct clk *clk, int enable)
-{
-	u32 mask;
-
-	if (BCMCPU_IS_6338())
-		mask = CKCTL_6338_SPI_EN;
-	else if (BCMCPU_IS_6348())
-		mask = CKCTL_6348_SPI_EN;
-	else if (BCMCPU_IS_6358())
-		mask = CKCTL_6358_SPI_EN;
-	else
-		/* BCMCPU_IS_6368 */
-		mask = CKCTL_6368_SPI_EN;
-	bcm_hwclock_set(mask, enable);
-}
-
-static struct clk clk_spi = {
-	.set	= spi_set,
-};
-
-/*
- * XTM clock
- */
-static void xtm_set(struct clk *clk, int enable)
-{
-	if (!BCMCPU_IS_6368())
-		return;
-
-	bcm_hwclock_set(CKCTL_6368_SAR_EN |
-			CKCTL_6368_SWPKT_SAR_EN, enable);
-
-	if (enable) {
-		u32 val;
-
-		/* reset sar core afer clock change */
-		val = bcm_perf_readl(PERF_SOFTRESET_6368_REG);
-		val &= ~SOFTRESET_6368_SAR_MASK;
-		bcm_perf_writel(val, PERF_SOFTRESET_6368_REG);
-		mdelay(1);
-		val |= SOFTRESET_6368_SAR_MASK;
-		bcm_perf_writel(val, PERF_SOFTRESET_6368_REG);
-		mdelay(1);
-	}
-}
-
-
-static struct clk clk_xtm = {
-	.set	= xtm_set,
-};
-
-/*
- * IPsec clock
- */
-static void ipsec_set(struct clk *clk, int enable)
-{
-	bcm_hwclock_set(CKCTL_6368_IPSEC_EN, enable);
-}
-
-static struct clk clk_ipsec = {
-	.set	= ipsec_set,
-};
-
-/*
- * Internal peripheral clock
- */
-static struct clk clk_periph = {
-	.rate	= (50 * 1000 * 1000),
-};
-
-
-/*
- * Linux clock API implementation
- */
-int clk_enable(struct clk *clk)
-{
-	mutex_lock(&clocks_mutex);
-	clk_enable_unlocked(clk);
-	mutex_unlock(&clocks_mutex);
 	return 0;
 }
 
-EXPORT_SYMBOL(clk_enable);
-
-void clk_disable(struct clk *clk)
+static void bcm63xx_clk_disable(struct clk_hw *hw)
 {
-	mutex_lock(&clocks_mutex);
-	clk_disable_unlocked(clk);
-	mutex_unlock(&clocks_mutex);
+	struct bcm63xx_clk *clk = to_bcm63xx_clk(hw);
+
+	if (clk->gate_bit >= 0)
+		bcm63xx_clk_set(clk->gate_bit, 0);
 }
 
-EXPORT_SYMBOL(clk_disable);
-
-unsigned long clk_get_rate(struct clk *clk)
+static int bcm63xx_clk_is_enabled(struct clk_hw *hw)
 {
-	return clk->rate;
+	struct bcm63xx_clk *clk = to_bcm63xx_clk(hw);
+
+	if (clk->gate_bit >= 0)
+		return bcm_perf_readl(PERF_CKCTL_REG) & BIT(clk->gate_bit);
+
+	return 1;
 }
 
-EXPORT_SYMBOL(clk_get_rate);
-
-struct clk *clk_get(struct device *dev, const char *id)
+static unsigned long bcm63xx_clk_recalc_rate(struct clk_hw *hw,
+					     unsigned long parent_state)
 {
-	if (!strcmp(id, "enet0"))
-		return &clk_enet0;
-	if (!strcmp(id, "enet1"))
-		return &clk_enet1;
-	if (!strcmp(id, "enetsw"))
-		return &clk_enetsw;
-	if (!strcmp(id, "ephy"))
-		return &clk_ephy;
-	if (!strcmp(id, "usbh"))
-		return &clk_usbh;
-	if (!strcmp(id, "usbd"))
-		return &clk_usbd;
-	if (!strcmp(id, "spi"))
-		return &clk_spi;
-	if (!strcmp(id, "xtm"))
-		return &clk_xtm;
-	if (!strcmp(id, "periph"))
-		return &clk_periph;
-	if (BCMCPU_IS_6358() && !strcmp(id, "pcm"))
-		return &clk_pcm;
-	if (BCMCPU_IS_6368() && !strcmp(id, "ipsec"))
-		return &clk_ipsec;
-	return ERR_PTR(-ENOENT);
+	return to_bcm63xx_clk(hw)->rate;
 }
 
-EXPORT_SYMBOL(clk_get);
+static const struct clk_ops bcm63xx_clk_ops = {
+	.enable		= bcm63xx_clk_enable,
+	.disable	= bcm63xx_clk_disable,
+	.is_enabled	= bcm63xx_clk_is_enabled,
+	.recalc_rate	= bcm63xx_clk_recalc_rate,
+};
 
-void clk_put(struct clk *clk)
+static void __init bcm63xx_clock_init(struct device_node *node)
 {
+	u32 gate_bit_dt, rate = 0;
+	s8 gate_bit = -1;
+	struct clk *clk;
+	struct bcm63xx_clk *bcm63xx_clk;
+	const char *clk_name = node->name;
+	const char *parent = NULL;
+	int num_names, i;
+	struct clk_init_data init;
+
+	if (!of_property_read_u32(node, "brcm,gate-bit", &gate_bit_dt) &&
+	    !WARN_ON(gate_bit_dt > 32))
+		gate_bit = gate_bit_dt;
+
+	of_property_read_u32(node, "clock-frequency", &rate);
+
+	num_names = of_property_count_strings(node, "clock-output-names");
+
+	if (!WARN_ON(num_names == 0))
+		of_property_read_string_index(node, "clock-output-names", 0,
+					      &clk_name);
+
+	parent = of_clk_get_parent_name(node, 0);
+
+	bcm63xx_clk = kzalloc(sizeof(*bcm63xx_clk), GFP_KERNEL);
+	if (!bcm63xx_clk)
+		return;
+
+	bcm63xx_clk->rate = rate;
+	bcm63xx_clk->gate_bit = gate_bit;
+
+	init.name = clk_name;
+	init.ops = &bcm63xx_clk_ops;
+
+	if (parent) {
+		init.flags = 0;
+		init.num_parents = 1;
+		init.parent_names = &parent;
+	} else {
+		init.flags = CLK_IS_ROOT;
+		init.num_parents = 0;
+		init.parent_names = NULL;
+	}
+
+	bcm63xx_clk->hw.init = &init;
+
+	clk = clk_register(NULL, &bcm63xx_clk->hw);
+	if (IS_ERR(clk)) {
+		kfree(bcm63xx_clk);
+		return;
+	}
+
+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
+	clk_register_clkdev(clk, clk_name, NULL);
+
+	/* register aliases */
+	for (i = 1; i < num_names; i++) {
+		of_property_read_string_index(node, "clock-output-names", i,
+					      &clk_name);
+		clk_register_clkdev(clk, clk_name, NULL);
+	}
 }
 
-EXPORT_SYMBOL(clk_put);
+static const __initconst struct of_device_id clk_match[] = {
+	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
+	{ .compatible = "brcm,bcm63xx-clock", .data = bcm63xx_clock_init, },
+	{ },
+};
+
+int __init bcm63xx_clocks_init(void)
+{
+	of_clk_init(clk_match);
+
+	return 0;
+}
+arch_initcall(bcm63xx_clocks_init);

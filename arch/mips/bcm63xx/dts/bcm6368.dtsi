@@ -44,6 +44,130 @@
 				interrupt-controller;
 				#interrupt-cells = <1>;
 			};
+
+			clocks {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				periph: periph {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-frequency = <50000000>;
+					clock-output-names = "periph";
+				};
+
+				vdsl_qproc: vdsl_qproc {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "vdsl-qproc";
+					brcm,gate-bit = <2>;
+				};
+
+				vdsl_afe: vdsl_afe {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "vdsl-afe";
+					brcm,gate-bit = <3>;
+				};
+
+				vdsl_bonding: vdsl_bonding {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "vdsl-bonding";
+					brcm,gate-bit = <4>;
+				};
+
+				vdsl: vdsl {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "vdsl";
+					brcm,gate-bit = <5>;
+				};
+
+				phymips: phymips {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "phymips";
+					brcm,gate-bit = <6>;
+				};
+
+				enetsw_usb: enetsw_usb {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "enetsw-usb";
+					brcm,gate-bit = <7>;
+				};
+
+				enetsw_sar: enetsw_sar {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "enetsw-sar";
+					brcm,gate-bit = <8>;
+				};
+
+				spi: spi {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "spi";
+					brcm,gate-bit = <9>;
+				};
+
+				usbd: usbd {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "usbd";
+					brcm,gate-bit = <10>;
+				};
+
+				sar: sar {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "sar";
+					brcm,gate-bit = <11>;
+				};
+
+				enetsw: enetsw {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "enetsw";
+					brcm,gate-bit = <12>;
+				};
+
+				utopia: utopia {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "utopia";
+					brcm,gate-bit = <13>;
+				};
+
+				pcm: pcm {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "pcm";
+					brcm,gate-bit = <14>;
+				};
+
+				usbh: usbh {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "usbh";
+					brcm,gate-bit = <15>;
+				};
+
+				nand: nand {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "nand";
+					brcm,gate-bit = <17>;
+				};
+
+				ipsec: ipsec {
+					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
+					clock-output-names = "ipsec";
+					brcm,gate-bit = <18>;
+				};
+			};
 		};
 	};
 };

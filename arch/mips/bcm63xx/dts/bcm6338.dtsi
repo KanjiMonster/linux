@@ -31,6 +31,53 @@
 				#interrupt-cells = <1>;
 				compatible = "brcm,bcm63xx-ipic";
 			};
+
+			clocks {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				periph: periph {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-frequency = <50000000>;
+					clock-output-names = "periph";
+				};
+
+				adsl: adsl {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "adsl";
+					brcm,gate-bit = <0>;
+				};
+
+				mpi: mpi {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "pcm";
+					brcm,gate-bit = <1>;
+				};
+
+				enet_usbd: enet_usbd {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "enet", "enet0", "usbd";
+					brcm,gate-bit = <5>;
+				};
+
+				sar: sar {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "sar";
+					brcm,gate-bit = <6>;
+				};
+
+				spi: spi {
+					#clock-cells = <0>;
+					compatible = "brcm,bcm63xx-clock";
+					clock-output-names = "spi";
+					brcm,gate-bit = <9>;
+				};
+			};
 		};
 	};
 };

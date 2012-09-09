@@ -1,0 +1,32 @@
+* Broadcom BCM63XX Clock bindings
+
+This binding uses the common clock binding[1].
+
+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+
+Required properties:
+- compatible: one of
+  a) "brcm,bcm63xx-clock"
+  Standard BCM63XX clock.
+  b) "brcm,bcm63xx-sar-clock"
+  SAR/ATM clock, which requires a reset of the SAR/ATM block.
+  c) "brcm,bcm63xx-enetsw-clock"
+  Generic ethernet switch clock, which requires a reset of the block.
+  d) "brcm,bcm6368-enetsw-clock"
+  BCM6368 ethernet switch clock, which requires additional clocks to be
+  enabled during reset.
+
+Optional properties:
+- brcm,gate-bit: gate bit in the clock control register.
+
+- clock-frequency: frequency of this clock.
+
+Example:
+
+	hsspi: clock@9 {
+		compatible = "brcm,bcm63xx-clock";
+		#clock-cells = <0>;
+		clock-output-names = "hsspi";
+		brcm,gate-bit = <9>;
+		clock-frequency = <133333333>;
+	};

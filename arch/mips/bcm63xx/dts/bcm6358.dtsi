@@ -138,5 +138,19 @@
 			#gpio-cells = <2>;
 			ngpio = <40>;
 		};
+
+		uart0: serial@100 {
+			compatible = "brcm,bcm63xx-uart";
+			reg = <0x100 0x18>;
+			interrupts = <2>;
+			status = "disabled";
+		};
+
+		uart1: serial@120 {
+			compatible = "brcm,bcm63xx-uart";
+			reg = <0x120 0x18>;
+			interrupts = <3>;
+			status = "disabled";
+		};
 	};
 };

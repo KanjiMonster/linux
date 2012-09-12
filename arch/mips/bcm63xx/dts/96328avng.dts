@@ -8,5 +8,8 @@
 
 	ubus@b0000000 {
 
+		serial@100 {
+			status = "ok";
+		};
 	};
 };

@@ -128,5 +128,19 @@
 			reg = <0x80 0x80>;
 			gpio-controller;
 		};
+
+		uart0: serial@100 {
+			compatible = "brcm,bcm63xx-uart";
+			reg = <0x100 0x18>;
+			interrupts = <10>;
+			status = "disabled";
+		};
+
+		uart1: serial@120 {
+			compatible = "brcm,bcm63xx-uart";
+			reg = <0x120 0x18>;
+			interrupts = <11>;
+			status = "disabled";
+		};
 	};
 };

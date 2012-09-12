@@ -40,7 +40,6 @@ static struct board_info __initdata board_96328avng = {
 	.name				= "96328avng",
 	.expected_cpu_id		= 0x6328,
 
-	.has_uart0			= 1,
 	.has_pci			= 1,
 	.has_usbd			= 0,
 
@@ -88,7 +87,6 @@ static struct board_info __initdata board_96338gw = {
 	.name				= "96338GW",
 	.expected_cpu_id		= 0x6338,
 
-	.has_uart0			= 1,
 	.has_enet0			= 1,
 	.enet0 = {
 		.force_speed_100	= 1,
@@ -131,7 +129,6 @@ static struct board_info __initdata board_96338w = {
 	.name				= "96338W",
 	.expected_cpu_id		= 0x6338,
 
-	.has_uart0			= 1,
 	.has_enet0			= 1,
 	.enet0 = {
 		.force_speed_100	= 1,
@@ -176,8 +173,6 @@ static struct board_info __initdata board_96338w = {
 static struct board_info __initdata board_96345gw2 = {
 	.name				= "96345GW2",
 	.expected_cpu_id		= 0x6345,
-
-	.has_uart0			= 1,
 };
 #endif
 
@@ -189,7 +184,6 @@ static struct board_info __initdata board_96348r = {
 	.name				= "96348R",
 	.expected_cpu_id		= 0x6348,
 
-	.has_uart0			= 1,
 	.has_enet0			= 1,
 	.has_pci			= 1,
 
@@ -233,7 +227,6 @@ static struct board_info __initdata board_96348gw_10 = {
 	.name				= "96348GW-10",
 	.expected_cpu_id		= 0x6348,
 
-	.has_uart0			= 1,
 	.has_enet0			= 1,
 	.has_enet1			= 1,
 	.has_pci			= 1,
@@ -293,7 +286,6 @@ static struct board_info __initdata board_96348gw_11 = {
 	.name				= "96348GW-11",
 	.expected_cpu_id		= 0x6348,
 
-	.has_uart0			= 1,
 	.has_enet0			= 1,
 	.has_enet1			= 1,
 	.has_pci			= 1,
@@ -347,7 +339,6 @@ static struct board_info __initdata board_96348gw = {
 	.name				= "96348GW",
 	.expected_cpu_id		= 0x6348,
 
-	.has_uart0			= 1,
 	.has_enet0			= 1,
 	.has_enet1			= 1,
 	.has_pci			= 1,
@@ -405,7 +396,6 @@ static struct board_info __initdata board_FAST2404 = {
 	.name				= "F@ST2404",
 	.expected_cpu_id		= 0x6348,
 
-	.has_uart0			= 1,
         .has_enet0			= 1,
         .has_enet1			= 1,
         .has_pci			= 1,
@@ -448,7 +438,6 @@ static struct board_info __initdata board_DV201AMR = {
 	.name				= "DV201AMR",
 	.expected_cpu_id		= 0x6348,
 
-	.has_uart0			= 1,
 	.has_pci			= 1,
 	.has_ohci0			= 1,
 
@@ -468,7 +457,6 @@ static struct board_info __initdata board_96348gw_a = {
 	.name				= "96348GW-A",
 	.expected_cpu_id		= 0x6348,
 
-	.has_uart0			= 1,
 	.has_enet0			= 1,
 	.has_enet1			= 1,
 	.has_pci			= 1,
@@ -494,7 +482,6 @@ static struct board_info __initdata board_96358vw = {
 	.name				= "96358VW",
 	.expected_cpu_id		= 0x6358,
 
-	.has_uart0			= 1,
 	.has_enet0			= 1,
 	.has_enet1			= 1,
 	.has_pci			= 1,
@@ -546,7 +533,6 @@ static struct board_info __initdata board_96358vw2 = {
 	.name				= "96358VW2",
 	.expected_cpu_id		= 0x6358,
 
-	.has_uart0			= 1,
 	.has_enet0			= 1,
 	.has_enet1			= 1,
 	.has_pci			= 1,
@@ -594,7 +580,6 @@ static struct board_info __initdata board_AGPFS0 = {
 	.name                           = "AGPF-S0",
 	.expected_cpu_id                = 0x6358,
 
-	.has_uart0			= 1,
 	.has_enet0                      = 1,
 	.has_enet1                      = 1,
 	.has_pci                        = 1,

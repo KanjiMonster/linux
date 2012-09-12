@@ -18,5 +18,8 @@
 
 	ubus@fffe0000 {
 
+		serial@300 {
+			status = "ok";
+		};
 	};
 };

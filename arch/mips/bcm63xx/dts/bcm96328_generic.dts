@@ -1,0 +1,11 @@
+/dts-v1/;
+
+/include/ "bcm6328.dtsi"
+
+/ {
+	model = "Generic BCM6328 board";
+	compatible = "brcm,bcm96328-generic";
+
+	ubus@b0000000 {
+	};
+};

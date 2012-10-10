@@ -1,0 +1,11 @@
+/dts-v1/;
+
+/include/ "bcm6345.dtsi"
+
+/ {
+	model = "Generic BCM6345 board";
+	compatible = "brcm,bcm96345-generic";
+
+	ubus@fffe0000 {
+	};
+};

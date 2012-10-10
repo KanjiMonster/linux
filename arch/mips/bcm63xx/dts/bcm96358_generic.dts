@@ -1,0 +1,11 @@
+/dts-v1/;
+
+/include/ "bcm6358.dtsi"
+
+/ {
+	model = "Generic BCM6358 board";
+	compatible = "brcm,bcm96358-generic";
+
+	ubus@fffe0000 {
+	};
+};

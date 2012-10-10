@@ -802,23 +802,32 @@ static struct uart_driver bcm_uart_driver = {
  */
 static int __devinit bcm_uart_probe(struct platform_device *pdev)
 {
-	struct resource *res_mem, *res_irq;
+	struct resource *res_mem;
 	struct uart_port *port;
 	struct clk *clk;
-	int ret;
-
-	if (pdev->id < 0 || pdev->id >= BCM63XX_NR_UARTS)
-		return -EINVAL;
-
-	if (ports[pdev->id].membase)
-		return -EBUSY;
+	int ret, irq;
 
 	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res_mem)
 		return -ENODEV;
 
-	res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (!res_irq)
+	if (pdev->id < 0)  {
+		void __iomem *membase;
+
+		membase = ioremap(res_mem->start, resource_size(res_mem));
+		if (membase == (void *)bcm63xx_regset_address(RSET_UART0))
+			pdev->id = 0;
+		else
+			pdev->id = 1;
+		iounmap(membase);
+	}
+
+	if (ports[pdev->id].membase)
+		return -EBUSY;
+
+
+	irq = platform_get_irq(pdev, 0);
+	if (!irq)
 		return -ENODEV;
 
 	clk = clk_get(&pdev->dev, "periph");
@@ -829,7 +838,7 @@ static int __devinit bcm_uart_probe(struct platform_device *pdev)
 	memset(port, 0, sizeof(*port));
 	port->iotype = UPIO_MEM;
 	port->mapbase = res_mem->start;
-	port->irq = res_irq->start;
+	port->irq = irq;
 	port->ops = &bcm_uart_ops;
 	port->flags = UPF_BOOT_AUTOCONF;
 	port->dev = &pdev->dev;
@@ -862,12 +871,18 @@ static int __devexit bcm_uart_remove(struct platform_device *pdev)
 /*
  * platform driver stuff
  */
+static const struct of_device_id bcm_uart_match[] = {
+	{ .compatible = "brcm,bcm63xx-uart" },
+	{ },
+};
+
 static struct platform_driver bcm_uart_platform_driver = {
 	.probe	= bcm_uart_probe,
 	.remove	= __devexit_p(bcm_uart_remove),
 	.driver	= {
 		.owner = THIS_MODULE,
 		.name  = "bcm63xx_uart",
+		.of_match_table = bcm_uart_match,
 	},
 };
 

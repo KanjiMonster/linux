@@ -1,0 +1,17 @@
+* Broadcom BCM63XX UART
+
+Required properties:
+- compatible: "brcm,bcm63xx-uart"
+  Compatible with all BCM63XX SoCs.
+
+- reg: address and length of the register block.
+
+- interrupts: the uart's interrupt number.
+
+Example:
+
+	uart0: serial@100 {
+		compatible = "brcm,bcm63xx";
+		reg = <0x100 0x18>;
+		interrupts = <2>;
+	};

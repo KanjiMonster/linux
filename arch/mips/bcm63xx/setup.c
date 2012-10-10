@@ -209,8 +209,15 @@ void __init device_tree_init(void)
 
 	devtree = find_compatible_tree(of_ids[0].compatible);
 	if (!devtree) {
-		pr_warn("no compatible device tree found for board %s\n", name);
-		return;
+		pr_warn("no compatible device tree found for board %s, using fallback tree\n",
+			name);
+		snprintf(of_ids[0].compatible, sizeof(of_ids[0].compatible),
+			 "brcm,bcm9%x-generic", bcm63xx_get_cpu_id());
+		devtree = find_compatible_tree(of_ids[0].compatible);
+
+		if (!devtree)
+			panic("no fallback tree available for BCM%x!\n",
+			      bcm63xx_get_cpu_id());
 	}
 
 	bph = early_init_dt_alloc_memory_arch(devtree->totalsize, 8);
@@ -225,10 +232,8 @@ void __init device_tree_init(void)
 
 int __init bcm63xx_populate_device_tree(void)
 {
-	if (!of_have_populated_dt()) {
-		pr_warn("device tree not available\n");
-		return -ENODEV;
-	}
+	if (!of_have_populated_dt())
+		panic("device tree not available\n");
 
 	return of_platform_populate(NULL, of_ids, NULL, NULL);
 }

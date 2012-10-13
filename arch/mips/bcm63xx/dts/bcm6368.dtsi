@@ -170,5 +170,13 @@
 				};
 			};
 		};
+
+		gpio0: gpio@80 {
+			compatible = "brcm,bcm63xx-gpio";
+			regs = <0x80 0x80>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			ngpio = <38>;
+		};
 	};
 };

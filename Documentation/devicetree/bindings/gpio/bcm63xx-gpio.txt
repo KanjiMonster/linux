@@ -1,0 +1,24 @@
+* Broadcom BCM63XX GPIO controller
+
+Required properties:
+- compatible: "brcm,bcm63xx-gpio"
+  Compatible with all BCM63XX SoCs.
+
+- reg: address and length of the register block.
+
+- gpio-controller: This is a GPIO controller.
+
+- #gpio-cells: Must be <2>. The first cell is the GPIO pin, and
+  the second one the standard linux flags.
+
+- ngpio: number of GPIOs present in this SoC.
+
+Example:
+
+	gpio: gpio@80 {
+		compatible = "brcm,bcm63xx-gpio";
+		reg = <0x80 0x80>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpio = <40>;
+	};

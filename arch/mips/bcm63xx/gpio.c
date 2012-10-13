@@ -141,7 +141,6 @@ static int bcm63xx_gpio_direction_output(struct gpio_chip *chip,
 	return bcm63xx_gpio_set_direction(chip, gpio, BCM63XX_GPIO_DIR_OUT);
 }
 
-
 static struct gpio_chip bcm63xx_gpio_chip = {
 	.label			= "bcm63xx-gpio",
 	.direction_input	= bcm63xx_gpio_direction_input,
@@ -151,6 +150,34 @@ static struct gpio_chip bcm63xx_gpio_chip = {
 	.base			= 0,
 };
 
+int __init bcm63xx_gpio_probe(struct platform_device *pdev)
+{
+	u32 val;
+
+	if (of_property_read_u32(pdev->dev.of_node, "ngpio", &val))
+		return -EINVAL;
+
+	bcm63xx_gpio_chip.ngpio = val;
+	bcm63xx_gpio_chip.dev = &pdev->dev;
+	pr_info("registering %d GPIOs\n", bcm63xx_gpio_chip.ngpio);
+
+	return gpiochip_add(&bcm63xx_gpio_chip);
+}
+
+static struct of_device_id of_bcm63xx_gpio_match[] = {
+	{ .compatible = "brcm,bcm63xx-gpio" },
+	{ },
+};
+
+static struct platform_driver bcm63xx_gpio_driver = {
+	.driver = {
+		.name = "bcm63xx-gpio",
+		.owner = THIS_MODULE,
+		.of_match_table = of_bcm63xx_gpio_match,
+	},
+	.probe = bcm63xx_gpio_probe,
+};
+
 int __init bcm63xx_gpio_init(void)
 {
 	bcm63xx_gpio_out_low_reg_init();
@@ -158,8 +185,8 @@ int __init bcm63xx_gpio_init(void)
 	gpio_out_low = bcm_gpio_readl(gpio_out_low_reg);
 	if (!BCMCPU_IS_6345())
 		gpio_out_high = bcm_gpio_readl(GPIO_DATA_HI_REG);
-	bcm63xx_gpio_chip.ngpio = bcm63xx_gpio_count();
-	pr_info("registering %d GPIOs\n", bcm63xx_gpio_chip.ngpio);
 
-	return gpiochip_add(&bcm63xx_gpio_chip);
+	return platform_driver_register(&bcm63xx_gpio_driver);
 }
+
+arch_initcall(bcm63xx_gpio_init);

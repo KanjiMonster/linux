@@ -127,6 +127,7 @@
 			compatible = "brcm,bcm63xx-gpio";
 			reg = <0x80 0x80>;
 			gpio-controller;
+			brcm,num-gpios = <40>;
 		};
 
 		uart0: serial@100 {

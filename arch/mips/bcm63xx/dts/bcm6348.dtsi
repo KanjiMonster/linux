@@ -90,7 +90,7 @@
 		uart0: serial@300 {
 			compatible = "brcm,bcm63xx-uart";
 			reg = <0x300 0x18>;
-			interrupts = <10>;
+			interrupts = <2>;
 			status = "disabled";
 		};
 

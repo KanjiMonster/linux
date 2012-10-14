@@ -140,14 +140,14 @@
 		uart0: serial@100 {
 			compatible = "brcm,bcm63xx-uart";
 			reg = <0x100 0x18>;
-			interrupts = <36>;
+			interrupts = <28>;
 			status = "disabled";
 		};
 
 		uart1: serial@120 {
 			compatible = "brcm,bcm63xx-uart";
 			reg = <0x120 0x18>;
-			interrupts = <47>;
+			interrupts = <39>;
 			status = "disabled";
 		};
 	};

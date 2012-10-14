@@ -152,12 +152,12 @@ static struct gpio_chip bcm63xx_gpio_chip = {
 
 int __init bcm63xx_gpio_probe(struct platform_device *pdev)
 {
-	bcm63xx_gpio_out_low_reg_init();
+	u32 val;
 
-	gpio_out_low = bcm_gpio_readl(gpio_out_low_reg);
-	if (!BCMCPU_IS_6345())
-		gpio_out_high = bcm_gpio_readl(GPIO_DATA_HI_REG);
-	bcm63xx_gpio_chip.ngpio = bcm63xx_gpio_count();
+	if (of_property_read_u32(pdev->dev.of_node, "brcm,num-gpios", &val))
+		return -EINVAL;
+
+	bcm63xx_gpio_chip.ngpio = val;
 	bcm63xx_gpio_chip.dev = &pdev->dev;
 	pr_info("registering %d GPIOs\n", bcm63xx_gpio_chip.ngpio);
 
@@ -180,6 +180,12 @@ static struct platform_driver bcm63xx_gpio_driver = {
 
 int __init bcm63xx_gpio_init(void)
 {
+	bcm63xx_gpio_out_low_reg_init();
+
+	gpio_out_low = bcm_gpio_readl(gpio_out_low_reg);
+	if (!BCMCPU_IS_6345())
+		gpio_out_high = bcm_gpio_readl(GPIO_DATA_HI_REG);
+
 	return platform_driver_register(&bcm63xx_gpio_driver);
 }
 

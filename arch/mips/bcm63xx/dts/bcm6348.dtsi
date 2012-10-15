@@ -98,6 +98,7 @@
 			compatible = "brcm,bcm63xx-gpio";
 			regs = <0x400 0x80>;
 			gpio-controller;
+			#gpio-cells = <1>;
 			brcm,num-gpios = <37>;
 		};
 	};

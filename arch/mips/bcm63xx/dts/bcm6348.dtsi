@@ -21,15 +21,15 @@
 
 		perf@0 {
 			epic: epic {
+				compatible = "brcm,bcm63xx-epic";
 				interrupt-controller;
 				#interrupt-cells = <2>;
-				compatible = "brcm,bcm63xx-epic";
 			};
 
 			ipic: ipic {
+				compatible = "brcm,bcm63xx-ipic";
 				interrupt-controller;
 				#interrupt-cells = <1>;
-				compatible = "brcm,bcm63xx-ipic";
 			};
 
 			clocks {

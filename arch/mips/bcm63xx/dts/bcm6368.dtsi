@@ -40,45 +40,10 @@
 				#size-cells = <0>;
 
 				periph: periph {
-					#clock-cells = <0>;
 					compatible = "brcm,bcm63xx-clock";
+					#clock-cells = <0>;
 					clock-frequency = <50000000>;
 					clock-output-names = "periph";
-				};
-
-				vdsl_qproc: vdsl_qproc {
-					#clock-cells = <0>;
-					compatible = "brcm,bcm63xx-clock";
-					clock-output-names = "vdsl-qproc";
-					brcm,gate-bit = <2>;
-				};
-
-				vdsl_afe: vdsl_afe {
-					#clock-cells = <0>;
-					compatible = "brcm,bcm63xx-clock";
-					clock-output-names = "vdsl-afe";
-					brcm,gate-bit = <3>;
-				};
-
-				vdsl_bonding: vdsl_bonding {
-					#clock-cells = <0>;
-					compatible = "brcm,bcm63xx-clock";
-					clock-output-names = "vdsl-bonding";
-					brcm,gate-bit = <4>;
-				};
-
-				vdsl: vdsl {
-					#clock-cells = <0>;
-					compatible = "brcm,bcm63xx-clock";
-					clock-output-names = "vdsl";
-					brcm,gate-bit = <5>;
-				};
-
-				phymips: phymips {
-					#clock-cells = <0>;
-					compatible = "brcm,bcm63xx-clock";
-					clock-output-names = "phymips";
-					brcm,gate-bit = <6>;
 				};
 
 				enetsw_usb: enetsw_usb {
@@ -112,7 +77,7 @@
 				sar: sar {
 					#clock-cells = <0>;
 					compatible = "brcm,bcm63xx-clock";
-					clock-output-names = "sar";
+					clock-output-names = "sar", "xtm";
 					brcm,gate-bit = <11>;
 				};
 
@@ -121,13 +86,6 @@
 					compatible = "brcm,bcm63xx-clock";
 					clock-output-names = "enetsw";
 					brcm,gate-bit = <12>;
-				};
-
-				utopia: utopia {
-					#clock-cells = <0>;
-					compatible = "brcm,bcm63xx-clock";
-					clock-output-names = "utopia";
-					brcm,gate-bit = <13>;
 				};
 
 				pcm: pcm {

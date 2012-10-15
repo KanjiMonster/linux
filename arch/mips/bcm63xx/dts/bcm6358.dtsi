@@ -23,8 +23,6 @@
 		interrupt-parent = <&ipic>;
 
 		perf@0 {
-			reg = <0x0 0x40>;
-
 			epic: epic {
 				compatible = "brcm,bcm63xx-epic";
 				interrupt-controller;

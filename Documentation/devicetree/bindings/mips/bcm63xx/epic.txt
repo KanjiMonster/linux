@@ -1,4 +1,4 @@
-* BCM63XX External Interrupt Controller
+* Broadcom BCM63XX External Interrupt Controller
 
 Properties:
 - compatible: "brcm,bcm63xx-epic"
@@ -13,7 +13,7 @@ Properties:
 
 Example:
 
-	epic: epic {
+	epic: interrupt-controller@18 {
 		compatible = "brcm,bcm63xx-epic";
 		interrupt-controller;
 		#interrupt-cells = <2>;

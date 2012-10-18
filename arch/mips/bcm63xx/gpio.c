@@ -154,7 +154,7 @@ int __init bcm63xx_gpio_probe(struct platform_device *pdev)
 {
 	u32 val;
 
-	if (of_property_read_u32(pdev->dev.of_node, "brcm,num-gpios", &val))
+	if (of_property_read_u32(pdev->dev.of_node, "ngpio", &val))
 		return -EINVAL;
 
 	bcm63xx_gpio_chip.ngpio = val;

@@ -125,7 +125,7 @@
 				};
 
 				enetsw: enetsw {
-					compatible = "brcm,bcm63xx-clock";
+					compatible = "brcm,bcm63xx-enetsw-clock";
 					#clock-cells = <0>;
 					clock-output-names = "enetsw";
 					brcm,gate-bit = <11>;

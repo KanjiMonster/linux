@@ -12,10 +12,12 @@
 #include <linux/clkdev.h>
 #include <linux/clk-provider.h>
 #include <linux/of.h>
+#include <linux/delay.h>
 
 #include <bcm63xx_cpu.h>
 #include <bcm63xx_io.h>
 #include <bcm63xx_regs.h>
+#include <bcm63xx_core.h>
 
 DEFINE_SPINLOCK(bcm63xx_clk_lock);
 
@@ -23,6 +25,7 @@ struct bcm63xx_clk {
 	struct clk_hw hw;
 	u32 rate;
 	s8 gate_bit;
+	void (*reset)(void);
 };
 
 #define to_bcm63xx_clk(p) container_of(p, struct bcm63xx_clk, hw)
@@ -52,6 +55,9 @@ static int bcm63xx_clk_enable(struct clk_hw *hw)
 
 	if (clk->gate_bit >= 0)
 		bcm63xx_clk_set(clk->gate_bit, 1);
+
+	if (clk->reset)
+		clk->reset();
 
 	return 0;
 }
@@ -87,7 +93,41 @@ static const struct clk_ops bcm63xx_clk_ops = {
 	.recalc_rate	= bcm63xx_clk_recalc_rate,
 };
 
-static void __init bcm63xx_clock_init(struct device_node *node)
+static void bcm63xx_enetsw_reset(void)
+{
+	bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 1);
+	mdelay(100);
+	bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 0);
+	mdelay(100);
+}
+
+static void bcm6368_enetsw_reset(void)
+{
+	struct clk *clocks[2];
+
+	/* secondary clocks need to be enabled when resetting the core */
+	clocks[0] = clk_get(NULL, "enetsw-usb");
+	clocks[1] = clk_get(NULL, "enetsw-sar");
+
+	clk_prepare_enable(clocks[0]);
+	clk_prepare_enable(clocks[1]);
+
+	bcm63xx_enetsw_reset();
+
+	clk_disable_unprepare(clocks[0]);
+	clk_disable_unprepare(clocks[1]);
+}
+
+static void bcm63xx_sar_reset(void)
+{
+	bcm63xx_core_set_reset(BCM63XX_RESET_SAR, 1);
+	mdelay(1);
+	bcm63xx_core_set_reset(BCM63XX_RESET_SAR, 0);
+	mdelay(1);
+}
+
+static void __init bcm63xx_clock_init(struct device_node *node,
+				      void (*reset)(void))
 {
 	u32 gate_bit_dt, rate = 0;
 	s8 gate_bit = -1;
@@ -118,6 +158,7 @@ static void __init bcm63xx_clock_init(struct device_node *node)
 
 	bcm63xx_clk->rate = rate;
 	bcm63xx_clk->gate_bit = gate_bit;
+	bcm63xx_clk->reset = reset;
 
 	init.name = clk_name;
 	init.ops = &bcm63xx_clk_ops;
@@ -151,9 +192,43 @@ static void __init bcm63xx_clock_init(struct device_node *node)
 	}
 }
 
+static void __init bcm63xx_generic_clock_init(struct device_node *node)
+{
+	bcm63xx_clock_init(node, NULL);
+}
+
+static void __init bcm63xx_enetsw_clock_init(struct device_node *node)
+{
+	bcm63xx_clock_init(node, bcm63xx_enetsw_reset);
+}
+
+static void __init bcm6368_enetsw_clock_init(struct device_node *node)
+{
+	bcm63xx_clock_init(node, bcm6368_enetsw_reset);
+}
+
+static void __init bcm63xx_sar_clock_init(struct device_node *node)
+{
+	bcm63xx_clock_init(node, bcm63xx_sar_reset);
+}
+
 static const __initconst struct of_device_id clk_match[] = {
-	{ .compatible = "brcm,bcm63xx-clock", .data = bcm63xx_clock_init, },
-	{ },
+	{
+		.compatible = "brcm,bcm63xx-clock",
+		.data = bcm63xx_generic_clock_init,
+	},
+	{
+		.compatible = "brcm,bcm63xx-enetsw-clock",
+		.data = bcm63xx_enetsw_clock_init,
+	},
+	{
+		.compatible = "brcm,bcm6368-enetsw-clock",
+		.data = bcm63xx_enetsw_clock_init,
+	},
+	{
+		.compatible = "brcm,bcm63xx-sar-clock",
+		.data = bcm63xx_sar_clock_init,
+	},
 };
 
 int __init bcm63xx_clocks_init(void)

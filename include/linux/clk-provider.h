@@ -318,6 +318,9 @@ void of_fixed_clk_setup(struct device_node *np);
  *	of this register, and mask of gate bits are in higher 16-bit of this
  *	register.  While setting the gate bits, higher 16-bit should also be
  *	updated to indicate changing gate bits.
+ * CLK_GATE_BIG_ENDIAN - by default little endian register accesses are used for
+ *	the gate register.  Setting this flag makes the register accesses big
+ *	endian.
  */
 struct clk_gate {
 	struct clk_hw hw;
@@ -331,6 +334,7 @@ struct clk_gate {
 
 #define CLK_GATE_SET_TO_DISABLE		BIT(0)
 #define CLK_GATE_HIWORD_MASK		BIT(1)
+#define CLK_GATE_BIG_ENDIAN		BIT(2)
 
 extern const struct clk_ops clk_gate_ops;
 struct clk *clk_register_gate(struct device *dev, const char *name,
@@ -903,6 +907,16 @@ static inline u32 clk_readl(u32 __iomem *reg)
 static inline void clk_writel(u32 val, u32 __iomem *reg)
 {
 	writel(val, reg);
+}
+
+static inline u32 clk_readl_be(u32 __iomem *reg)
+{
+	return ioread32be(reg);
+}
+
+static inline void clk_writel_be(u32 val, u32 __iomem *reg)
+{
+	iowrite32be(val, reg);
 }
 
 #endif	/* platform dependent I/O accessors */

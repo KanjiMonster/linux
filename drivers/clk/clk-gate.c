@@ -26,6 +26,22 @@
  * parent - fixed parent.  No clk_set_parent support
  */
 
+static inline u32 gate_clk_readl(struct clk_gate *gate)
+{
+	if (gate->flags & CLK_GATE_BIG_ENDIAN)
+		return clk_readl_be(gate->reg);
+	else
+		return clk_readl(gate->reg);
+}
+
+static inline void gate_clk_writel(u32 val, struct clk_gate *gate)
+{
+	if (gate->flags & CLK_GATE_BIG_ENDIAN)
+		clk_writel_be(val, gate->reg);
+	else
+		clk_writel(val, gate->reg);
+}
+
 /*
  * It works on following logic:
  *
@@ -58,7 +74,7 @@ static void clk_gate_endisable(struct clk_hw *hw, int enable)
 		if (set)
 			reg |= BIT(gate->bit_idx);
 	} else {
-		reg = clk_readl(gate->reg);
+		reg = gate_clk_readl(gate);
 
 		if (set)
 			reg |= BIT(gate->bit_idx);
@@ -66,7 +82,7 @@ static void clk_gate_endisable(struct clk_hw *hw, int enable)
 			reg &= ~BIT(gate->bit_idx);
 	}
 
-	clk_writel(reg, gate->reg);
+	gate_clk_writel(reg, gate);
 
 	if (gate->lock)
 		spin_unlock_irqrestore(gate->lock, flags);
@@ -91,7 +107,7 @@ static int clk_gate_is_enabled(struct clk_hw *hw)
 	u32 reg;
 	struct clk_gate *gate = to_clk_gate(hw);
 
-	reg = clk_readl(gate->reg);
+	reg = gate_clk_readl(gate);
 
 	/* if a set bit disables this clk, flip it before masking */
 	if (gate->flags & CLK_GATE_SET_TO_DISABLE)

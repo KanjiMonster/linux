@@ -1,0 +1,3 @@
+config PINCTRL_BCM63XX
+	bool
+	select GPIO_GENERIC

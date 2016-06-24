@@ -23,3 +23,10 @@ config PINCTRL_BCM6358
 	select PINCTRL_BCM63XX
 	select GENERIC_PINCONF
 	select MFD_SYSCON
+
+config PINCTRL_BCM6362
+	bool "BCM6362 pincontrol driver" if COMPILE_TEST
+	select PINMUX
+	select PINCONF
+	select PINCTRL_BCM63XX
+	select GENERIC_PINCONF

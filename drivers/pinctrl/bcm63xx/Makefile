@@ -1,1 +1,2 @@
 obj-$(CONFIG_PINCTRL_BCM63XX)	+= pinctrl-bcm63xx.o
+obj-$(CONFIG_PINCTRL_BCM6328)	+= pinctrl-bcm6328.o

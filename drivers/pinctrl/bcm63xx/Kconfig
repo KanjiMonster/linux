@@ -2,6 +2,13 @@ config PINCTRL_BCM63XX
 	bool
 	select GPIO_GENERIC
 
+config PINCTRL_BCM6318
+	bool "BCM6318 pincontrol driver" if COMPILE_TEST
+	select PINMUX
+	select PINCONF
+	select PINCTRL_BCM63XX
+	select GENERIC_PINCONF
+
 config PINCTRL_BCM6328
 	bool "BCM6328 pincontrol driver" if COMPILE_TEST
 	select PINMUX

@@ -1,0 +1,79 @@
+* Broadcom BCM6362 pin controller
+
+Required properties:
+- compatible: "brcm,bcm6362-pinctrl"
+- regs: register specifies of data, dirout, led, mode, ctrl, basemode registers.
+- reg-names: must be "dat", "dirout", "led", "mode", "ctrl", "basemode".
+- gpio-controller
+- #gpio-cells: must be 2.
+
+Example:
+
+pinctrl: pin-controller@10000080 {
+	compatible = "brcm,bcm6362-pinctrl";
+	reg = <0x10000080 0x8>,
+	      <0x10000088 0x8>,
+	      <0x10000090 0x4>,
+	      <0x10000098 0x4>,
+	      <0x1000009c 0x4>,
+	      <0x100000b8 0x4>;
+	reg-names = "dirout", "dat", "led",
+		    "mode", "ctrl", "basemode";
+
+	gpio-controller;
+	#gpio-cells = <2>;
+};
+
+Available pins/groups and functions:
+
+name		pins		functions
+-----------------------------------------------------------
+gpio0		0		led, usb_device_led
+gpio1		1		led, sys_irq
+gpio2		2		led, serial_led_clk
+gpio3		3		led, serial_led_data
+gpio4		4		led, robosw_led_data
+gpio5		5		led, robosw_led_clk
+gpio6		6		led, robosw_led0
+gpio7		7		led, robosw_led1
+gpio8		8		led, inet_led
+gpio9		9		led, spi_cs2
+gpio10		10		led, spi_cs3
+gpio11		11		led, ntr_pulse
+gpio12		12		led, uart1_scts
+gpio13		13		led, uart1_srts
+gpio14		14		led, uart1_sdin
+gpio15		15		led, uart1_sdout
+gpio16		16		led, adsl_spi_miso
+gpio17		17		led, adsl_spi_mosi
+gpio18		18		led, adsl_spi_clk
+gpio19		19		led, adsl_spi_cs
+gpio20		20		led, ephy0_led
+gpio21		21		led, ephy1_led
+gpio22		22		led, ephy2_led
+gpio23		23		led, ephy3_led
+gpio24		24		ext_irq0
+gpio25		25		ext_irq1
+gpio26		26		ext_irq2
+gpio27		27		ext_irq3
+gpio28		28		-
+gpio29		29		-
+gpio30		30		-
+gpio31		31		-
+gpio32		32		wifi
+gpio33		33		wifi
+gpio34		34		wifi
+gpio35		35		wifi
+gpio36		36		wifi
+gpio37		37		wifi
+gpio38		38		wifi
+gpio39		39		wifi
+gpio40		40		wifi
+gpio41		41		wifi
+gpio42		42		wifi
+gpio43		43		wifi
+gpio44		44		wifi
+gpio45		45		wifi
+gpio46		46		wifi
+gpio47		47		wifi
+nand_grp	8, 12-23, 27	nand

@@ -1,0 +1,32 @@
+* Broadcom BCM6348 pin controller
+
+Required properties:
+- compatible: "brcm,bcm6348-pinctrl"
+- reg: register specifiers of data, dirout, mode registers.
+- reg-names: must be "dat", "dirout", "mode".
+- gpio-controller: identifies this node as a gpio-controller.
+- #gpio-cells: must be 2.
+
+Example:
+
+pinctrl: pin-controller@fffe0080 {
+	compatible = "brcm,bcm6348-pinctrl";
+	reg = <0xfffe0080 0x8>,
+	      <0xfffe0088 0x8>,
+	      <0xfffe0098 0x4>;
+	reg-names = "dirout", "dat", "mode";
+
+	gpio-controller;
+	#gpio-cells = <2>;
+};
+
+Available pins/groups and functions:
+
+name		pins	functions
+-----------------------------------------------------------
+group0		32-36	ext_mii, utopia, diag
+group1		22-31	ext_ephy, mii_snoop, mii_pccard,
+			spi_master_uart, utopia, diag
+group2		16-21	pci, diag
+group3		8-15	ext_mii, utopia
+group4		0-7	ext_ephy, mii_snoop, legacy_led, diag

@@ -75,6 +75,69 @@
 			interrupts = <2>, <3>;
 		};
 
+		pinctrl: pin-controller@fffe0080 {
+			compatible = "brcm,bcm6358-pinctrl";
+			reg = <0xfffe0080 0x8>,
+			      <0xfffe0088 0x8>;
+			reg-names = "dirout", "dat";
+			brcm,gpiomode = <&gpiomode>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			pinctrl_ebi_cs: ebi_cs {
+				function = "ebi_cs";
+				groups = "ebi_cs_grp";
+			};
+
+			pinctrl_uart1: uart1 {
+				function = "uart1";
+				groups = "uart1_grp";
+			};
+
+			pinctrl_serial_led: serial_led {
+				function = "serial_led";
+				groups = "serial_led_grp";
+			};
+
+			pinctrl_legacy_led: legacy_led {
+				function = "legacy_led";
+				groups = "legacy_led_grp";
+			};
+
+			pinctrl_led: led {
+				function = "led";
+				groups = "led_grp";
+			};
+
+			pinctrl_spi_cs: spi_cs {
+				function = "spi_cs";
+				groups = "spi_cs_grp";
+			};
+
+			pinctrl_utopia: utopia {
+				function = "utopia";
+				groups = "utopia_grp";
+			};
+
+			pinctrl_pwm_syn_clk: pwm_syn_clk {
+				function = "pwm_syn_clk";
+				groups = "pwm_syn_clk_grp";
+			};
+
+			pinctrl_sys_irq: sys_irq {
+				function = "sys_irq";
+				groups = "sys_irq_grp";
+			};
+		};
+
+		gpiomode: syscon@fffe0080 {
+			compatible = "brcm,bcm6358-gpiomode", "syscon";
+
+			reg = <0xfffe0098 0x4>;
+			native-endian;
+		};
+
 		leds0: led-controller@fffe00d0 {
 			#address-cells = <1>;
 			#size-cells = <0>;

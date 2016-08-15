@@ -144,6 +144,8 @@ void __init plat_time_init(void)
 	mips_hpt_frequency = bcm63xx_get_cpu_freq() / 2;
 }
 
+static struct static_vm reg_base;
+
 void __init plat_mem_setup(void)
 {
 	add_memory_region(0, bcm63xx_get_memory_size(), BOOT_MEM_RAM);
@@ -155,6 +157,30 @@ void __init plat_mem_setup(void)
 	set_io_port_base(0);
 	ioport_resource.start = 0;
 	ioport_resource.end = ~0;
+
+	switch (bcm63xx_get_cpu_id()) {
+		case BCM3368_CPU_ID:
+			add_identity_vm_early(&reg_base, 0xfff80000, 0x20000,
+					      plat_mem_setup);
+			break;
+		case BCM6338_CPU_ID:
+		case BCM6345_CPU_ID:
+		case BCM6348_CPU_ID:
+		case BCM6358_CPU_ID:
+			add_identity_vm_early(&reg_base, 0xfff00000, 0xf0000,
+					      plat_mem_setup);
+			break;
+		case BCM6328_CPU_ID:
+		case BCM6362_CPU_ID:
+		case BCM6368_CPU_ID:
+			/*
+			 * TODO: remove this once we don't pass KSEG1 to
+			 * ioremap() anymore.
+			 */
+			add_identity_vm_early(&reg_base, 0xb000000, 0x1000000,
+					      plat_mem_setup);
+			break;
+	}
 
 	board_setup();
 }

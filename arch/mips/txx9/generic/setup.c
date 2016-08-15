@@ -528,9 +528,13 @@ void __init txx9_sio_putchar_init(unsigned long baseaddr)
 }
 #endif /* CONFIG_EARLY_PRINTK */
 
+static struct static_vm reg_base;
+
 /* wrappers */
 void __init plat_mem_setup(void)
 {
+	unsigned long base;
+
 	ioport_resource.start = 0;
 	ioport_resource.end = ~0UL;	/* no limit */
 	iomem_resource.start = 0;
@@ -544,6 +548,19 @@ void __init plat_mem_setup(void)
 #ifdef CONFIG_PCI
 	pcibios_plat_setup = txx9_pcibios_setup;
 #endif
+
+	if (IS_ENABLED(CONFIG_64_BIT))
+		base = 0xfff00000ul;
+	else
+		base = 0xff000000ul;
+
+	if (IS_ENABLED(CONFIG_MACH_TX39XX))
+		add_identity_vm_early(&reg_base, base, 0xff0000,
+				      plat_mem_setup);
+	if (IS_ENABLED(CONFIG_MACH_TX49XX))
+		add_identity_vm_early(&reg_base, base, 0x400000,
+				      plat_mem_setup);
+
 	txx9_board_vec->mem_setup();
 }
 

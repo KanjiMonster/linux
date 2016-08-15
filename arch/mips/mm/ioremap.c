@@ -16,6 +16,64 @@
 #include <asm/io.h>
 #include <asm/tlbflush.h>
 
+static LIST_HEAD(static_vmlist);
+
+static struct static_vm *find_static_vm_paddr(phys_addr_t paddr, size_t size)
+{
+	struct static_vm *svm;
+	struct vm_struct *vm;
+
+	list_for_each_entry(svm, &static_vmlist, list) {
+		vm = &svm->vm;
+
+		if (vm->phys_addr > paddr ||
+		    paddr + size - 1 > vm->phys_addr + vm->size - 1)
+			continue;
+
+		return svm;
+	}
+
+	return NULL;
+}
+
+struct static_vm *find_static_vm_vaddr(const volatile void *vaddr)
+{
+	struct static_vm *svm;
+	struct vm_struct *vm;
+
+	list_for_each_entry(svm, &static_vmlist, list) {
+		vm = &svm->vm;
+
+		/* static_vmlist is ascending order */
+		if (vm->addr > vaddr)
+			break;
+
+		if (vm->addr <= vaddr && vm->addr + vm->size > vaddr)
+			return svm;
+	}
+
+	return NULL;
+}
+
+void __init add_static_vm_early(struct static_vm *svm)
+{
+	struct static_vm *curr_svm;
+	struct vm_struct *vm;
+	void *vaddr;
+
+	vm = &svm->vm;
+	vm_area_add_early(vm);
+	vaddr = vm->addr;
+
+	list_for_each_entry(curr_svm, &static_vmlist, list) {
+		vm = &curr_svm->vm;
+
+		if (vm->addr > vaddr)
+			break;
+	}
+	list_add_tail(&svm->list, &curr_svm->list);
+}
+
 static inline void remap_area_pte(pte_t * pte, unsigned long address,
 	phys_addr_t size, phys_addr_t phys_addr, unsigned long flags)
 {
@@ -119,6 +177,7 @@ void __iomem * __ioremap(phys_addr_t phys_addr, phys_addr_t size, unsigned long 
 	unsigned long offset;
 	phys_addr_t last_addr;
 	void * addr;
+	struct static_vm *svm;
 
 	phys_addr = fixup_bigphys_addr(phys_addr, size);
 
@@ -150,6 +209,12 @@ void __iomem * __ioremap(phys_addr_t phys_addr, phys_addr_t size, unsigned long 
 				return NULL;
 	}
 
+	svm = find_static_vm_paddr(phys_addr, size);
+	if (svm) {
+		offset = (unsigned long)phys_addr - svm->vm.phys_addr;
+		return (void __iomem *)svm->vm.addr + offset;
+	}
+
 	/*
 	 * Mappings have to be page-aligned
 	 */
@@ -179,6 +244,9 @@ void __iounmap(const volatile void __iomem *addr)
 	struct vm_struct *p;
 
 	if (IS_KSEG1(addr))
+		return;
+
+	if (find_static_vm_vaddr(addr))
 		return;
 
 	p = remove_vm_area((void *) (PAGE_MASK & (unsigned long __force) addr));

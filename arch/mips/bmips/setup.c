@@ -86,6 +86,8 @@ static void bcm63xx_fixup_cpu1(void)
 	cpumask_set_cpu(1, &bmips_booted_mask);
 }
 
+static struct static_vm reg_base;
+
 static void bcm6328_quirks(void)
 {
 	/* Check CPU1 status in OTP (it is usually disabled) */
@@ -102,6 +104,8 @@ static void bcm6358_quirks(void)
 	 * disable SMP for now
 	 */
 	bmips_smp_enabled = 0;
+
+	add_identity_vm_early(&reg_base, 0xfff00000, 0xf0000, plat_mem_setup);
 }
 
 static void bcm6368_quirks(void)

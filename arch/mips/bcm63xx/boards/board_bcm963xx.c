@@ -843,6 +843,13 @@ void __init board_prom_init(void)
 				GPIO_MODE_6348_G0_EXT_MII;
 	}
 
+	if (BCMCPU_IS_6368() && board.has_enetsw) {
+		for (i = 0; i < 4; i++) {
+			if (board.enetsw.used_ports[i].used)
+				val |= (GPIO_MODE_6368_EPHY0_LED << i);
+		}
+	}
+
 	bcm_gpio_writel(val, GPIO_MODE_REG);
 }
 

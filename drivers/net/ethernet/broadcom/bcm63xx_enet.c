@@ -1764,7 +1764,7 @@ static int bcm_enet_probe(struct platform_device *pdev)
 		clk_name = "enet1";
 	}
 
-	priv->mac_clk = clk_get(&pdev->dev, clk_name);
+	priv->mac_clk = devm_clk_get(&pdev->dev, clk_name);
 	if (IS_ERR(priv->mac_clk)) {
 		ret = PTR_ERR(priv->mac_clk);
 		goto out;
@@ -1799,11 +1799,11 @@ static int bcm_enet_probe(struct platform_device *pdev)
 
 	if (priv->mac_id == 0 && priv->has_phy && !priv->use_external_mii) {
 		/* using internal PHY, enable clock */
-		priv->phy_clk = clk_get(&pdev->dev, "ephy");
+		priv->phy_clk = devm_clk_get(&pdev->dev, "ephy");
 		if (IS_ERR(priv->phy_clk)) {
 			ret = PTR_ERR(priv->phy_clk);
 			priv->phy_clk = NULL;
-			goto out_put_clk_mac;
+			goto out_disable_clk_mac;
 		}
 		ret = clk_prepare_enable(priv->phy_clk);
 		if (ret)
@@ -1901,14 +1901,11 @@ out_free_mdio:
 out_uninit_hw:
 	/* turn off mdc clock */
 	enet_writel(priv, 0, ENET_MIISC_REG);
-	if (priv->phy_clk) {
+	if (priv->phy_clk)
 		clk_disable_unprepare(priv->phy_clk);
-		clk_put(priv->phy_clk);
-	}
 
-out_put_clk_mac:
+out_disable_clk_mac:
 	clk_disable_unprepare(priv->mac_clk);
-	clk_put(priv->mac_clk);
 out:
 	free_netdev(dev);
 	return ret;
@@ -1944,12 +1941,10 @@ static int bcm_enet_remove(struct platform_device *pdev)
 	}
 
 	/* disable hw block clocks */
-	if (priv->phy_clk) {
+	if (priv->phy_clk)
 		clk_disable_unprepare(priv->phy_clk);
-		clk_put(priv->phy_clk);
-	}
+
 	clk_disable_unprepare(priv->mac_clk);
-	clk_put(priv->mac_clk);
 
 	free_netdev(dev);
 	return 0;
@@ -2732,26 +2727,20 @@ static int bcm_enetsw_probe(struct platform_device *pdev)
 	if (ret)
 		goto out;
 
-	if (!request_mem_region(res_mem->start, resource_size(res_mem),
-				"bcm63xx_enetsw")) {
-		ret = -EBUSY;
+	priv->base = devm_ioremap_resource(&pdev->dev, res_mem);
+	if (IS_ERR(priv->base)) {
+		ret = PTR_ERR(priv->base);
 		goto out;
 	}
 
-	priv->base = ioremap(res_mem->start, resource_size(res_mem));
-	if (priv->base == NULL) {
-		ret = -ENOMEM;
-		goto out_release_mem;
-	}
-
-	priv->mac_clk = clk_get(&pdev->dev, "enetsw");
+	priv->mac_clk = devm_clk_get(&pdev->dev, "enetsw");
 	if (IS_ERR(priv->mac_clk)) {
 		ret = PTR_ERR(priv->mac_clk);
-		goto out_unmap;
+		goto out;
 	}
 	ret = clk_prepare_enable(priv->mac_clk);
 	if (ret)
-		goto out_clk_put;
+		goto out;
 
 	priv->rx_chan = 0;
 	priv->tx_chan = 1;
@@ -2783,15 +2772,6 @@ static int bcm_enetsw_probe(struct platform_device *pdev)
 
 out_clk_disable:
 	clk_disable_unprepare(priv->mac_clk);
-
-out_put_clk:
-	clk_put(priv->mac_clk);
-
-out_unmap:
-	iounmap(priv->base);
-
-out_release_mem:
-	release_mem_region(res_mem->start, resource_size(res_mem));
 out:
 	free_netdev(dev);
 	return ret;
@@ -2803,20 +2783,13 @@ static int bcm_enetsw_remove(struct platform_device *pdev)
 {
 	struct bcm_enet_priv *priv;
 	struct net_device *dev;
-	struct resource *res;
 
 	/* stop netdevice */
 	dev = platform_get_drvdata(pdev);
 	priv = netdev_priv(dev);
 	unregister_netdev(dev);
 
-	/* release device resources */
-	iounmap(priv->base);
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	release_mem_region(res->start, resource_size(res));
-
 	clk_disable_unprepare(priv->mac_clk);
-	clk_put(priv->mac_clk);
 
 	free_netdev(dev);
 	return 0;

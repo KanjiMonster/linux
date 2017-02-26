@@ -121,21 +121,56 @@ static struct clk clk_ephy = {
 };
 
 /*
+ * Ethernet switch SAR clock
+ */
+static void swpkt_sar_set(struct clk *clk, int enable)
+{
+	if (BCMCPU_IS_6368())
+		bcm_hwclock_set(CKCTL_6368_SWPKT_SAR_EN, enable);
+	else
+		return;
+}
+
+static struct clk clk_swpkt_sar = {
+	.set	= swpkt_sar_set,
+};
+
+/*
+ * Ethernet switch USB clock
+ */
+static void swpkt_usb_set(struct clk *clk, int enable)
+{
+	if (BCMCPU_IS_6368())
+		bcm_hwclock_set(CKCTL_6368_SWPKT_USB_EN, enable);
+	else
+		return;
+}
+
+static struct clk clk_swpkt_usb = {
+	.set	= swpkt_usb_set,
+};
+
+/*
  * Ethernet switch clock
  */
 static void enetsw_set(struct clk *clk, int enable)
 {
-	if (BCMCPU_IS_6328())
+	if (BCMCPU_IS_6328()) {
 		bcm_hwclock_set(CKCTL_6328_ROBOSW_EN, enable);
-	else if (BCMCPU_IS_6362())
+	} else if (BCMCPU_IS_6362()) {
 		bcm_hwclock_set(CKCTL_6362_ROBOSW_EN, enable);
-	else if (BCMCPU_IS_6368())
-		bcm_hwclock_set(CKCTL_6368_ROBOSW_EN |
-				CKCTL_6368_SWPKT_USB_EN |
-				CKCTL_6368_SWPKT_SAR_EN,
-				enable);
-	else
+	} else if (BCMCPU_IS_6368()) {
+		if (enable) {
+			clk_enable_unlocked(&clk_swpkt_sar);
+			clk_enable_unlocked(&clk_swpkt_usb);
+		} else {
+			clk_disable_unlocked(&clk_swpkt_sar);
+			clk_disable_unlocked(&clk_swpkt_usb);
+		}
+		bcm_hwclock_set(CKCTL_6368_ROBOSW_EN, enable);
+	} else {
 		return;
+	}
 
 	if (enable) {
 		/* reset switch core afer clock change */
@@ -256,8 +291,12 @@ static void xtm_set(struct clk *clk, int enable)
 	if (!BCMCPU_IS_6368())
 		return;
 
-	bcm_hwclock_set(CKCTL_6368_SAR_EN |
-			CKCTL_6368_SWPKT_SAR_EN, enable);
+	if (enable)
+		clk_enable_unlocked(&clk_swpkt_sar);
+	else
+		clk_disable_unlocked(&clk_swpkt_sar);
+
+	bcm_hwclock_set(CKCTL_6368_SAR_EN, enable);
 
 	if (enable) {
 		/* reset sar core afer clock change */
@@ -364,6 +403,10 @@ struct clk *clk_get(struct device *dev, const char *id)
 		return &clk_enet1;
 	if (!strcmp(id, "enetsw"))
 		return &clk_enetsw;
+	if (BCMCPU_IS_6368() && !strcmp(id, "swpkt_sar"))
+		return &clk_swpkt_sar;
+	if (BCMCPU_IS_6368() && !strcmp(id, "swpkt_usb"))
+		return &clk_swpkt_usb;
 	if (!strcmp(id, "ephy"))
 		return &clk_ephy;
 	if (!strcmp(id, "usbh"))

@@ -155,30 +155,12 @@ static struct clk clk_swpkt_usb = {
  */
 static void enetsw_set(struct clk *clk, int enable)
 {
-	if (BCMCPU_IS_6328()) {
+	if (BCMCPU_IS_6328())
 		bcm_hwclock_set(CKCTL_6328_ROBOSW_EN, enable);
-	} else if (BCMCPU_IS_6362()) {
+	else if (BCMCPU_IS_6362())
 		bcm_hwclock_set(CKCTL_6362_ROBOSW_EN, enable);
-	} else if (BCMCPU_IS_6368()) {
-		if (enable) {
-			clk_enable_unlocked(&clk_swpkt_sar);
-			clk_enable_unlocked(&clk_swpkt_usb);
-		} else {
-			clk_disable_unlocked(&clk_swpkt_sar);
-			clk_disable_unlocked(&clk_swpkt_usb);
-		}
+	else if (BCMCPU_IS_6368())
 		bcm_hwclock_set(CKCTL_6368_ROBOSW_EN, enable);
-	} else {
-		return;
-	}
-
-	if (enable) {
-		/* reset switch core afer clock change */
-		bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 1);
-		msleep(10);
-		bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 0);
-		msleep(10);
-	}
 }
 
 static struct clk clk_enetsw = {

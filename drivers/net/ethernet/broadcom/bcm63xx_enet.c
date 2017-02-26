@@ -32,6 +32,7 @@
 #include <linux/if_vlan.h>
 
 #include <bcm63xx_dev_enet.h>
+#include <bcm63xx_reset.h>
 #include "bcm63xx_enet.h"
 
 static char bcm_enet_driver_name[] = "bcm63xx_enet";
@@ -2669,6 +2670,53 @@ static int bcm_enetsw_set_ringparam(struct net_device *dev,
 	return 0;
 }
 
+static int bcm63xx_enetsw_reset(struct bcm_enet_priv *priv)
+{
+	/* reset switch core afer clock change */
+	bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 1);
+	msleep(10);
+	bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 0);
+	msleep(10);
+
+	return 0;
+}
+
+/* BCM6368's secondary clocks must be enabled when resetting the core */
+static int bcm6368_enetsw_reset(struct bcm_enet_priv *priv)
+{
+	int ret = 0;
+	struct clk *sar = NULL, *usb = NULL;
+
+	sar = clk_get(&priv->pdev->dev, "swpkt_sar");
+	if (IS_ERR(sar))
+		return PTR_ERR(sar);
+
+	usb = clk_get(&priv->pdev->dev, "swpkt_usb");
+	if (IS_ERR(usb)) {
+		ret = PTR_ERR(usb);
+		usb = NULL;
+		goto out_put;
+	}
+
+	ret = clk_prepare_enable(sar);
+	if (ret)
+		goto out_put;
+	ret = clk_prepare_enable(usb);
+	if (ret)
+		goto out_disable_sar;
+
+	ret = bcm63xx_enetsw_reset(priv);
+
+	clk_disable_unprepare(usb);
+out_disable_sar:
+	clk_disable_unprepare(sar);
+out_put:
+	clk_put(usb);
+	clk_put(sar);
+
+	return ret;
+}
+
 static struct ethtool_ops bcm_enetsw_ethtool_ops = {
 	.get_strings		= bcm_enetsw_get_strings,
 	.get_sset_count		= bcm_enetsw_get_sset_count,
@@ -2686,6 +2734,7 @@ static int bcm_enetsw_probe(struct platform_device *pdev)
 	struct bcm63xx_enetsw_platform_data *pd;
 	struct resource *res_mem;
 	int ret, irq_rx, irq_tx;
+	int (*reset)(struct bcm_enet_priv *);
 
 	if (!bcm_enet_shared_base[0])
 		return -EPROBE_DEFER;
@@ -2702,6 +2751,8 @@ static int bcm_enetsw_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	priv = netdev_priv(dev);
 	memset(priv, 0, sizeof(*priv));
+
+	reset = (void *)pdev->id_entry->driver_data;
 
 	/* initialize default and fetch platform data */
 	priv->enet_is_sw = true;
@@ -2741,6 +2792,10 @@ static int bcm_enetsw_probe(struct platform_device *pdev)
 	ret = clk_prepare_enable(priv->mac_clk);
 	if (ret)
 		goto out;
+
+	ret = reset(priv);
+	if (ret)
+		goto out_clk_disable;
 
 	priv->rx_chan = 0;
 	priv->tx_chan = 1;
@@ -2795,13 +2850,26 @@ static int bcm_enetsw_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct platform_device_id bcm63xx_enetsw_dev_match[] = {
+	{
+		.name = "bcm6368_enetsw",
+		.driver_data = (unsigned long)bcm6368_enetsw_reset,
+	},
+	{
+		.name = "bcm63xx_enetsw",
+		.driver_data = (unsigned long)bcm63xx_enetsw_reset,
+	},
+	{
+	},
+};
+
 struct platform_driver bcm63xx_enetsw_driver = {
 	.probe	= bcm_enetsw_probe,
 	.remove	= bcm_enetsw_remove,
 	.driver	= {
-		.name	= "bcm63xx_enetsw",
 		.owner  = THIS_MODULE,
 	},
+	.id_table = bcm63xx_enetsw_dev_match,
 };
 
 /* reserve & remap memory space shared between all macs */

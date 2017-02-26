@@ -303,6 +303,9 @@ bcm63xx_enetsw_register(const struct bcm63xx_enetsw_platform_data *pd)
 	enetsw_pd.dma_chan_en_mask = ENETDMAC_CHANCFG_EN_MASK;
 	enetsw_pd.dma_chan_int_mask = ENETDMAC_IR_PKTDONE_MASK;
 
+	if (BCMCPU_IS_6368())
+		bcm63xx_enetsw_device.name = "bcm6368_enetsw";
+
 	ret = platform_device_register(&bcm63xx_enetsw_device);
 	if (ret)
 		return ret;

@@ -26,6 +26,22 @@
  * parent - parent is adjustable through clk_set_parent
  */
 
+static inline u32 mux_clk_readl(struct clk_mux *mux)
+{
+	if (mux->flags & CLK_MUX_BIG_ENDIAN)
+		return clk_readl_be(mux->reg);
+	else
+		return clk_readl(mux->reg);
+}
+
+static inline void mux_clk_writel(u32 val, struct clk_mux *mux)
+{
+	if (mux->flags & CLK_MUX_BIG_ENDIAN)
+		clk_writel_be(val, mux->reg);
+	else
+		clk_writel(val, mux->reg);
+}
+
 static u8 clk_mux_get_parent(struct clk_hw *hw)
 {
 	struct clk_mux *mux = to_clk_mux(hw);
@@ -39,7 +55,7 @@ static u8 clk_mux_get_parent(struct clk_hw *hw)
 	 * OTOH, pmd_trace_clk_mux_ck uses a separate bit for each clock, so
 	 * val = 0x4 really means "bit 2, index starts at bit 0"
 	 */
-	val = clk_readl(mux->reg) >> mux->shift;
+	val = mux_clk_readl(mux) >> mux->shift;
 	val &= mux->mask;
 
 	if (mux->table) {
@@ -87,11 +103,11 @@ static int clk_mux_set_parent(struct clk_hw *hw, u8 index)
 	if (mux->flags & CLK_MUX_HIWORD_MASK) {
 		val = mux->mask << (mux->shift + 16);
 	} else {
-		val = clk_readl(mux->reg);
+		val = mux_clk_readl(mux);
 		val &= ~(mux->mask << mux->shift);
 	}
 	val |= index << mux->shift;
-	clk_writel(val, mux->reg);
+	mux_clk_writel(val, mux);
 
 	if (mux->lock)
 		spin_unlock_irqrestore(mux->lock, flags);

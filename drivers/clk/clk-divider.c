@@ -28,6 +28,22 @@
  * parent - fixed parent.  No clk_set_parent support
  */
 
+static inline u32 div_clk_readl(struct clk_divider *divider)
+{
+	if (divider->flags & CLK_DIVIDER_BIG_ENDIAN)
+		return clk_readl_be(divider->reg);
+	else
+		return clk_readl(divider->reg);
+}
+
+static inline void div_clk_writel(u32 val, struct clk_divider *divider)
+{
+	if (divider->flags & CLK_DIVIDER_BIG_ENDIAN)
+		clk_writel_be(val, divider->reg);
+	else
+		clk_writel(val, divider->reg);
+}
+
 #define div_mask(width)	((1 << (width)) - 1)
 
 static unsigned int _get_table_maxdiv(const struct clk_div_table *table,
@@ -141,7 +157,7 @@ static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
 	struct clk_divider *divider = to_clk_divider(hw);
 	unsigned int val;
 
-	val = clk_readl(divider->reg) >> divider->shift;
+	val = div_clk_readl(divider) >> divider->shift;
 	val &= div_mask(divider->width);
 
 	return divider_recalc_rate(hw, parent_rate, val, divider->table,
@@ -352,7 +368,7 @@ static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
 
 	/* if read only, just return current value */
 	if (divider->flags & CLK_DIVIDER_READ_ONLY) {
-		bestdiv = clk_readl(divider->reg) >> divider->shift;
+		bestdiv = div_clk_readl(divider) >> divider->shift;
 		bestdiv &= div_mask(divider->width);
 		bestdiv = _get_div(divider->table, bestdiv, divider->flags,
 			divider->width);
@@ -399,11 +415,11 @@ static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
 	if (divider->flags & CLK_DIVIDER_HIWORD_MASK) {
 		val = div_mask(divider->width) << (divider->shift + 16);
 	} else {
-		val = clk_readl(divider->reg);
+		val = div_clk_readl(divider);
 		val &= ~(div_mask(divider->width) << divider->shift);
 	}
 	val |= value << divider->shift;
-	clk_writel(val, divider->reg);
+	div_clk_writel(val, divider);
 
 	if (divider->lock)
 		spin_unlock_irqrestore(divider->lock, flags);

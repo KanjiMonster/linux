@@ -7,7 +7,6 @@
 #include <linux/phy.h>
 #include <linux/platform_device.h>
 
-#include <bcm63xx_irq.h>
 #include <bcm63xx_iudma.h>
 
 /* Ethernet core register defintions */

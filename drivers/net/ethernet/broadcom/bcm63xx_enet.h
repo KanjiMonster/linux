@@ -338,6 +338,11 @@ struct bcm_enet_priv {
 	/* used to poll switch port state */
 	struct timer_list swphy_poll;
 	spinlock_t enetsw_mdio_lock;
+};
+
+struct bcm63xx_iudma_priv {
+	/* io registers memory shared between all devices */
+	void __iomem *shared_base[3];
 
 	/* dma channel enable mask */
 	u32 dma_chan_en_mask;
@@ -353,6 +358,9 @@ struct bcm_enet_priv {
 
 	/* dma descriptor shift value */
 	unsigned int dma_desc_shift;
+
+	/* dma channel register offsets */
+	const unsigned long *regs_enetdmac;
 };
 
 

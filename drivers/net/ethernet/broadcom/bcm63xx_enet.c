@@ -32,7 +32,9 @@
 #include <linux/platform_data/bcm63xx_enet.h>
 #include <linux/if_vlan.h>
 
+#ifdef CONFIG_BCM63XX
 #include <bcm63xx_reset.h>
+#endif
 #include "bcm63xx_enet.h"
 
 static char bcm_enet_driver_name[] = "bcm63xx_enet";
@@ -2673,11 +2675,12 @@ static int bcm_enetsw_set_ringparam(struct net_device *dev,
 static int bcm63xx_enetsw_reset(struct bcm_enet_priv *priv)
 {
 	/* reset switch core afer clock change */
+#ifdef CONFIG_BCM63XX
 	bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 1);
 	msleep(10);
 	bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 0);
 	msleep(10);
-
+#endif
 	return 0;
 }
 

@@ -10,6 +10,7 @@
  * (at your option) any later version.
  */
 
+#include <linux/bcm63xx_iudma.h>
 #include <linux/bitops.h>
 #include <linux/bug.h>
 #include <linux/clk.h>
@@ -35,7 +36,6 @@
 #include <linux/workqueue.h>
 
 #include <bcm63xx_cpu.h>
-#include <bcm63xx_iudma.h>
 #include <bcm63xx_dev_usb_usbd.h>
 #include <bcm63xx_io.h>
 #include <bcm63xx_regs.h>

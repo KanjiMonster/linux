@@ -1,13 +1,13 @@
 #ifndef BCM63XX_ENET_H_
 #define BCM63XX_ENET_H_
 
+#include <linux/bcm63xx_iudma.h>
 #include <linux/types.h>
 #include <linux/mii.h>
 #include <linux/mutex.h>
 #include <linux/phy.h>
 #include <linux/platform_device.h>
 
-#include <bcm63xx_iudma.h>
 
 /* Ethernet core register defintions */
 

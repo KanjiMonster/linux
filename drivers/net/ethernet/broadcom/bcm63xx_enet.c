@@ -49,13 +49,13 @@ static struct bcm63xx_iudma_priv *enet_iudma;
  */
 static inline u32 enet_readl(struct bcm_enet_priv *priv, u32 off)
 {
-	return bcm_readl(priv->base + off);
+	return __raw_readl(priv->base + off);
 }
 
 static inline void enet_writel(struct bcm_enet_priv *priv,
 			       u32 val, u32 off)
 {
-	bcm_writel(val, priv->base + off);
+	__raw_writel(val, priv->base + off);
 }
 
 /*
@@ -63,35 +63,35 @@ static inline void enet_writel(struct bcm_enet_priv *priv,
  */
 static inline u32 enetsw_readl(struct bcm_enet_priv *priv, u32 off)
 {
-	return bcm_readl(priv->base + off);
+	return __raw_readl(priv->base + off);
 }
 
 static inline void enetsw_writel(struct bcm_enet_priv *priv,
 				 u32 val, u32 off)
 {
-	bcm_writel(val, priv->base + off);
+	__raw_writel(val, priv->base + off);
 }
 
 static inline u16 enetsw_readw(struct bcm_enet_priv *priv, u32 off)
 {
-	return bcm_readw(priv->base + off);
+	return __raw_readw(priv->base + off);
 }
 
 static inline void enetsw_writew(struct bcm_enet_priv *priv,
 				 u16 val, u32 off)
 {
-	bcm_writew(val, priv->base + off);
+	__raw_writew(val, priv->base + off);
 }
 
 static inline u8 enetsw_readb(struct bcm_enet_priv *priv, u32 off)
 {
-	return bcm_readb(priv->base + off);
+	return readb(priv->base + off);
 }
 
 static inline void enetsw_writeb(struct bcm_enet_priv *priv,
 				 u8 val, u32 off)
 {
-	bcm_writeb(val, priv->base + off);
+	writeb(val, priv->base + off);
 }
 
 
@@ -104,37 +104,37 @@ static inline unsigned long bcm63xx_enetdmacreg(enum bcm63xx_regs_enetdmac reg)
 
 static inline u32 enet_dma_readl(struct bcm_enet_priv *priv, u32 off)
 {
-	return bcm_readl(enet_iudma->shared_base[0] + off);
+	return __raw_readl(enet_iudma->shared_base[0] + off);
 }
 
 static inline void enet_dma_writel(struct bcm_enet_priv *priv,
 				       u32 val, u32 off)
 {
-	bcm_writel(val, enet_iudma->shared_base[0] + off);
+	__raw_writel(val, enet_iudma->shared_base[0] + off);
 }
 
 static inline u32 enet_dmac_readl(struct bcm_enet_priv *priv, u32 off, int chan)
 {
-	return bcm_readl(enet_iudma->shared_base[1] +
+	return __raw_readl(enet_iudma->shared_base[1] +
 		bcm63xx_enetdmacreg(off) + chan * enet_iudma->dma_chan_int_mask);
 }
 
 static inline void enet_dmac_writel(struct bcm_enet_priv *priv,
 				       u32 val, u32 off, int chan)
 {
-	bcm_writel(val, enet_iudma->shared_base[1] +
+	__raw_writel(val, enet_iudma->shared_base[1] +
 		bcm63xx_enetdmacreg(off) + chan * enet_iudma->dma_chan_int_mask);
 }
 
 static inline u32 enet_dmas_readl(struct bcm_enet_priv *priv, u32 off, int chan)
 {
-	return bcm_readl(enet_iudma->shared_base[2] + off + chan * enet_iudma->dma_chan_int_mask);
+	return __raw_readl(enet_iudma->shared_base[2] + off + chan * enet_iudma->dma_chan_int_mask);
 }
 
 static inline void enet_dmas_writel(struct bcm_enet_priv *priv,
 				       u32 val, u32 off, int chan)
 {
-	bcm_writel(val, enet_iudma->shared_base[2] + off + chan * enet_iudma->dma_chan_int_mask);
+	__raw_writel(val, enet_iudma->shared_base[2] + off + chan * enet_iudma->dma_chan_int_mask);
 }
 
 /*

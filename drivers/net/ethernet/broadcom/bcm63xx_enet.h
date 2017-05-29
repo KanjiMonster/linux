@@ -280,6 +280,9 @@
 #define ENETSW_JMBCTL_MAXSIZE_REG	0x4008
 
 
+/* Embedded Ethernet Switch RGMII ports offset */
+#define ENETSW_RGMII_PORT0	4
+
 /* default number of descriptor */
 #define BCMENET_DEF_RX_DESC	64
 #define BCMENET_DEF_TX_DESC	32

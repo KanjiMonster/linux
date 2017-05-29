@@ -29,9 +29,9 @@
 #include <linux/err.h>
 #include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
+#include <linux/platform_data/bcm63xx_enet.h>
 #include <linux/if_vlan.h>
 
-#include <bcm63xx_dev_enet.h>
 #include <bcm63xx_reset.h>
 #include "bcm63xx_enet.h"
 

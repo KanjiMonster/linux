@@ -52,7 +52,7 @@ config B44_PCI
 
 config BCM63XX_ENET
 	tristate "Broadcom 63xx internal mac support"
-	depends on BCM63XX
+	depends on BCM63XX || COMPILE_TEST
 	select MII
 	select PHYLIB
 	help

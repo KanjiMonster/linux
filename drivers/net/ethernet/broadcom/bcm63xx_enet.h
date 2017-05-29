@@ -340,6 +340,17 @@ struct bcm_enet_priv {
 	spinlock_t enetsw_mdio_lock;
 };
 
+enum bcm63xx_regs_enetdmac {
+	ENETDMAC_CHANCFG,
+	ENETDMAC_IR,
+	ENETDMAC_IRMASK,
+	ENETDMAC_MAXBURST,
+	ENETDMAC_BUFALLOC,
+	ENETDMAC_RSTART,
+	ENETDMAC_FC,
+	ENETDMAC_LEN,
+};
+
 struct bcm63xx_iudma_priv {
 	/* io registers memory shared between all devices */
 	void __iomem *shared_base[3];

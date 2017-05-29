@@ -2868,6 +2868,83 @@ struct platform_driver bcm63xx_enetsw_driver = {
 	.id_table = bcm63xx_enetsw_dev_match,
 };
 
+static const unsigned long bcm6348_regs_enetdmac[] = {
+	[ENETDMAC_CHANCFG]	= ENETDMAC_CHANCFG_REG,
+	[ENETDMAC_IR]		= ENETDMAC_IR_REG,
+	[ENETDMAC_IRMASK]	= ENETDMAC_IRMASK_REG,
+	[ENETDMAC_MAXBURST]	= ENETDMAC_MAXBURST_REG,
+};
+
+static const unsigned long bcm6345_regs_enetdmac[] = {
+	[ENETDMAC_CHANCFG]	= ENETDMA_6345_CHANCFG_REG,
+	[ENETDMAC_IR]		= ENETDMA_6345_IR_REG,
+	[ENETDMAC_IRMASK]	= ENETDMA_6345_IRMASK_REG,
+	[ENETDMAC_MAXBURST]	= ENETDMA_6345_MAXBURST_REG,
+	[ENETDMAC_BUFALLOC]	= ENETDMA_6345_BUFALLOC_REG,
+	[ENETDMAC_RSTART]	= ENETDMA_6345_RSTART_REG,
+	[ENETDMAC_FC]		= ENETDMA_6345_FC_REG,
+	[ENETDMAC_LEN]		= ENETDMA_6345_LEN_REG,
+};
+
+/*
+ * DMA related platform data
+ */
+struct bcm63xx_iudma_platform_data {
+	/* DMA channel enable mask */
+	u32 dma_chan_en_mask;
+
+	/* DMA channel interrupt mask */
+	u32 dma_chan_int_mask;
+
+	/* DMA engine has internal SRAM */
+	bool dma_has_sram;
+
+	/* DMA channel register width */
+	unsigned int dma_chan_width;
+
+	/* DMA descriptor shift */
+	unsigned int dma_desc_shift;
+
+	/* DMA channel register offset */
+	const unsigned long *regs_enetdmac;
+};
+
+static const struct bcm63xx_iudma_platform_data bcm6345_iudma_data = {
+	.dma_chan_en_mask	= ENETDMAC_CHANCFG_EN_MASK |
+				  ENETDMAC_CHANCFG_CHAINING_MASK |
+				  ENETDMAC_CHANCFG_WRAP_EN_MASK |
+				  ENETDMAC_CHANCFG_FLOWC_EN_MASK,
+	.dma_chan_int_mask	= ENETDMAC_IR_PKTDONE_MASK |
+				  ENETDMAC_IR_BUFDONE_MASK |
+				  ENETDMAC_IR_NOTOWNER_MASK,
+	.dma_has_sram		= false,
+	.dma_chan_width		= ENETDMA_6345_CHAN_WIDTH,
+	.dma_desc_shift		= ENETDMA_6345_DESC_SHIFT,
+	.regs_enetdmac		= bcm6345_regs_enetdmac,
+};
+
+static const struct bcm63xx_iudma_platform_data bcm6348_iudma_data = {
+	.dma_chan_en_mask	= ENETDMAC_CHANCFG_EN_MASK,
+	.dma_chan_int_mask	= ENETDMAC_IR_PKTDONE_MASK,
+	.dma_has_sram		= true,
+	.dma_chan_width		= ENETDMA_CHAN_WIDTH,
+	.dma_desc_shift		= 0,
+	.regs_enetdmac		= bcm6348_regs_enetdmac,
+};
+
+static const struct platform_device_id bcm63xx_shared_dev_match[] = {
+	{
+		.name = "bcm6345_enet_iudma",
+		.driver_data = (unsigned long)&bcm6345_iudma_data,
+	},
+	{
+		.name = "bcm6348_enet_iudma",
+		.driver_data = (unsigned long)&bcm6348_iudma_data,
+	},
+	{
+	},
+};
+
 /* reserve & remap memory space shared between all macs */
 static int bcm_enet_shared_probe(struct platform_device *pdev)
 {
@@ -2876,7 +2953,7 @@ static int bcm_enet_shared_probe(struct platform_device *pdev)
 	struct resource *res;
 	unsigned int i;
 
-	pd = dev_get_platdata(&pdev->dev);
+	pd = (void *)pdev->id_entry->driver_data;
 	if (!pd)
 		return -EINVAL;
 
@@ -2917,9 +2994,10 @@ struct platform_driver bcm63xx_enet_shared_driver = {
 	.probe	= bcm_enet_shared_probe,
 	.remove	= bcm_enet_shared_remove,
 	.driver	= {
-		.name	= "bcm63xx_enet_shared",
 		.owner  = THIS_MODULE,
 	},
+
+	.id_table = bcm63xx_shared_dev_match,
 };
 
 static struct platform_driver * const drivers[] = {

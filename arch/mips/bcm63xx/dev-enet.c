@@ -14,24 +14,6 @@
 #include <bcm63xx_io.h>
 #include <bcm63xx_regs.h>
 
-static const unsigned long bcm6348_regs_enetdmac[] = {
-	[ENETDMAC_CHANCFG]	= ENETDMAC_CHANCFG_REG,
-	[ENETDMAC_IR]		= ENETDMAC_IR_REG,
-	[ENETDMAC_IRMASK]	= ENETDMAC_IRMASK_REG,
-	[ENETDMAC_MAXBURST]	= ENETDMAC_MAXBURST_REG,
-};
-
-static const unsigned long bcm6345_regs_enetdmac[] = {
-	[ENETDMAC_CHANCFG]	= ENETDMA_6345_CHANCFG_REG,
-	[ENETDMAC_IR]		= ENETDMA_6345_IR_REG,
-	[ENETDMAC_IRMASK]	= ENETDMA_6345_IRMASK_REG,
-	[ENETDMAC_MAXBURST]	= ENETDMA_6345_MAXBURST_REG,
-	[ENETDMAC_BUFALLOC]	= ENETDMA_6345_BUFALLOC_REG,
-	[ENETDMAC_RSTART]	= ENETDMA_6345_RSTART_REG,
-	[ENETDMAC_FC]		= ENETDMA_6345_FC_REG,
-	[ENETDMAC_LEN]		= ENETDMA_6345_LEN_REG,
-};
-
 static struct resource shared_res[] = {
 	{
 		.start		= -1, /* filled at runtime */
@@ -57,9 +39,6 @@ static struct platform_device bcm63xx_enet_shared_device = {
 	.id		= 0,
 	.num_resources	= ARRAY_SIZE(shared_res),
 	.resource	= shared_res,
-	.dev		= {
-		.platform_data = &iudma_pd;
-	},
 };
 
 static int shared_device_registered;
@@ -165,10 +144,13 @@ static int __init register_shared(void)
 
 	shared_res[0].start = bcm63xx_regset_address(RSET_ENETDMA);
 	shared_res[0].end = shared_res[0].start;
-	if (BCMCPU_IS_6345())
+	if (BCMCPU_IS_6345()) {
+		bcm63xx_enet_shared_device.name = "bcm6345_enet_shared";
 		shared_res[0].end += (RSET_6345_ENETDMA_SIZE) - 1;
-	else
+	} else {
+		bcm63xx_enet_shared_device.name = "bcm6348_enet_shared";
 		shared_res[0].end += (RSET_ENETDMA_SIZE)  - 1;
+	}
 
 	if (BCMCPU_IS_6328() || BCMCPU_IS_6362() || BCMCPU_IS_6368())
 		chan_count = 32;
@@ -184,23 +166,6 @@ static int __init register_shared(void)
 	shared_res[2].start = bcm63xx_regset_address(RSET_ENETDMAS);
 	shared_res[2].end = shared_res[2].start;
 	shared_res[2].end += RSET_ENETDMAS_SIZE(chan_count)  - 1;
-
-	iudma_pd.dma_chan_en_mask = ENETDMAC_CHANCFG_EN_MASK;
-	iudma_pd.chan_int_mask = ENETDMAC_IR_PKTDONE_MASK;
-	if (BCMCPU_IS_6345()) {
-		iudma_pd.dma_chan_en_mask |= ENETDMAC_CHANCFG_CHAINING_MASK;
-		iudma_pd.dma_chan_en_mask |= ENETDMAC_CHANCFG_WRAP_EN_MASK;
-		iudma_pd.dma_chan_en_mask |= ENETDMAC_CHANCFG_FLOWC_EN_MASK;
-		iudma_pd.dma_chan_int_mask |= ENETDMA_IR_BUFDONE_MASK;
-		iudma_pd.dma_chan_int_mask |= ENETDMA_IR_NOTOWNER_MASK;
-		iudma_pd.dma_chan_width = ENETDMA_6345_CHAN_WIDTH;
-		iudma_pd.dma_desc_shift = ENETDMA_6345_DESC_SHIFT;
-		iudma_pd.regs_enetdmac = bcm6345_regs_enetdmac;
-	} else {
-		iudma_pd.dma_has_sram = true;
-		iudma_pd.dma_chan_width = ENETDMA_CHAN_WIDTH;
-		iudma_pd.regs_enetdmac = bcm6348_regs_enetdmac;
-	}
 
 	ret = platform_device_register(&bcm63xx_enet_shared_device);
 	if (ret)

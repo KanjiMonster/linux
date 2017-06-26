@@ -782,8 +782,7 @@ int add_mtd_partitions(struct mtd_info *master,
 
 		add_mtd_device(&slave->mtd);
 		mtd_add_partition_attrs(slave);
-		if (parts[i].types)
-			mtd_parse_part(slave, parts[i].types);
+		mtd_parse_part(slave, parts[i].types);
 
 		cur_offset = slave->offset + slave->mtd.size;
 	}
@@ -950,7 +949,9 @@ int parse_mtd_partitions(struct mtd_info *master, const char *const *types,
 	const char *compat;
 	int ret, err = 0;
 
-	np = of_get_child_by_name(mtd_get_of_node(master), "partitions");
+	np = mtd_get_of_node(master);
+	if (!mtd_is_partition(master))
+		np = of_get_child_by_name(np, "partitions");
 	of_property_for_each_string(np, "compatible", prop, compat) {
 		parser = mtd_part_get_compatible_parser(compat);
 		if (!parser)
@@ -966,8 +967,12 @@ int parse_mtd_partitions(struct mtd_info *master, const char *const *types,
 	}
 	of_node_put(np);
 
-	if (!types)
+	if (!types) {
+		if (mtd_is_partition(master))
+			return -ENOENT;
+
 		types = default_mtd_part_types;
+	}
 
 	for ( ; *types; types++) {
 		pr_debug("%s: parsing partitions %s\n", master->name, *types);

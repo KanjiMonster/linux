@@ -109,7 +109,7 @@ EXPORT_SYMBOL(clk_disable);
 unsigned long clk_get_rate(struct clk *clk)
 {
 	unsigned long ret = 0;
-	if (clk->ops && clk->ops->get_rate)
+	if (clk && clk->ops && clk->ops->get_rate)
 		ret = clk->ops->get_rate(clk);
 	return ret;
 }

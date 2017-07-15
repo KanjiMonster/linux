@@ -83,7 +83,9 @@ unsigned long clk_get_rate(struct clk *clk)
 {
 	unsigned long rate;
 
-	if (clk->ops->getrate)
+	if (!clk)
+		rate = 0;
+	else if (clk->ops->getrate)
 		rate = clk->ops->getrate(clk);
 	else
 		rate = clk->rate;

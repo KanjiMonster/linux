@@ -316,6 +316,9 @@ static unsigned long get_uart_rate(struct clk *clk)
 
 unsigned long clk_get_rate(struct clk *clk)
 {
+	if (!clk)
+		return 0;
+
 	if (clk->get_rate)
 		return clk->get_rate(clk);
 

@@ -14,8 +14,6 @@ method is used for a given flash device. To describe the method there should be
 a subnode of the flash device that is named 'partitions'. It must have a
 'compatible' property, which is used to identify the method to use.
 
-We currently only document a binding for fixed layouts.
-
 
 Fixed Partitions
 ================
@@ -107,5 +105,28 @@ flash@2 {
 			label = "filesystem #2";
 			reg = <0x2 0x00000000 0x1 0x00000000>;
 		};
+	};
+};
+
+
+Broadcom BCM963XX CFE Loader NOR Flash Partitions
+=================================================
+
+Most Broadcom BCM963XX devices use a simple flash layout on NOR flashes, with
+the first erase block used for the CFE bootloader, the last for an NVRAM
+partition, and the remainder in-between for one to two firmware partitions at
+fixed offsets, identified by a firmware header denoting the offsets and sizes of
+the kernel and rootfs parts.
+
+Required properties for the partitions node:
+- compatible : must be "brcm,bcm963xx-cfe-nor-partitions"
+
+There are no optional properties.
+
+Example:
+
+flash@1fc00000 {
+	partitions {
+		compatible = "brcm,bcm963xx-cfe-nor-partitions";
 	};
 };

@@ -134,3 +134,77 @@ flash@1fc00000 {
 		compatible = "brcm,bcm963xx-cfe-nor-partitions";
 	};
 };
+
+
+Broadcom BCM963XX ImageTag Partitions
+=====================================
+
+For Broadcom BCM963XX devices where the partition layout does not follow the
+standard layout as described above a mixed layout is needed. The ImageTag
+format is a single partition parser create up to two partitions, a 'kernel' and
+a 'rootfs' partition. Their order, offsets and lengths are based on the
+contents of the ImageTag.
+
+Required properties for the partition node:
+- compatible : must be "brcm,bcm963xx-imagetag"
+
+There are no optional properties
+
+Examples:
+
+
+flash@1e00000 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		cfe@0 {
+			reg = <0x0 0x10000>;
+			read-only;
+		};
+
+		firmware@10000 {
+			reg = <0x10000 0x7d0000>;
+			compatible = "brcm,bcm963xx-imagetag";
+		};
+
+		caldata@7e0000 {
+			reg = <0x7e0000 0x10000>;
+			read-only;
+		};
+
+		nvram@7f0000 {
+			reg = <0x7f0000 0x10000>;
+		};
+	};
+};
+
+
+flash@1e0000 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/*
+		 * Some devices use a flash chip with 64k erase blocks, some
+		 * use one with 128k erase blocks, so the vendor decided to
+		 * always use 128k as the firmware offset.
+		 */
+
+		cfe@0 {
+			reg = <0x0 0x20000>;
+			read-only;
+		};
+
+		firmware@20000 {
+			reg = <0x20000 0x7c0000>;
+			compatible = "brcm,bcm963xx-imagetag";
+		};
+
+		nvram@7e0000 {
+			reg = <0x7e0000 0x20000>;
+		};
+	};
+};

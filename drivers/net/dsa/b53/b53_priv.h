@@ -101,7 +101,13 @@ struct b53_port {
 struct b53_vlan {
 	u16 members;
 	u16 untag;
+	u8 mst;
 	bool valid;
+};
+
+struct b53_mst {
+	u16 msti;
+	u16 refcnt;
 };
 
 struct b53_device {
@@ -148,6 +154,9 @@ struct b53_device {
 	bool vlan_enabled;
 	unsigned int num_ports;
 	struct b53_port *ports;
+
+	unsigned int num_msts;
+	struct b53_mst *msts;
 
 	struct b53_pcs pcs[B53_N_PCS];
 };

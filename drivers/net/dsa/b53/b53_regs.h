@@ -50,6 +50,9 @@
 /* Jumbo Frame Registers */
 #define B53_JUMBO_PAGE			0x40
 
+/* Multiple Spanning Tree Registers */
+#define B53_MST_PAGE			0x43
+
 /* EEE Control Registers Page */
 #define B53_EEE_PAGE			0x92
 
@@ -288,6 +291,9 @@
 #define   VTE_MEMBERS			0x1ff
 #define   VTE_UNTAG_S			9
 #define   VTE_UNTAG			(0x1ff << 9)
+#define   VTE_MST_INDEX_S			18
+#define   VTE_MST_INDEX_8		(0x7 << 18)
+#define   VTE_MST_INDEX_16		(0xf << 18)
 
 /*************************************************************************
  * ARL I/O Registers
@@ -481,6 +487,25 @@
 #define B53_JUMBO_MAX_SIZE_63XX		0x08
 #define   JMS_MIN_SIZE			1518
 #define   JMS_MAX_SIZE			9724
+
+/*************************************************************************
+ * Multiple Spanning Tree Registers
+ *************************************************************************/
+
+/* MST Control Register (8 bit) */
+#define B53_MST_CONTROL			0x00
+#define  MST_CONTROL_802_1_S_EN		BIT(0)
+
+/* MST Table Registers */
+#define B53_MST_TABLE(mst)		(0x10 + (mst) * 0x4)
+#define  MST_PORT_STATE_OFFSET(i)	((i) * 3)
+#define  MST_PORT_STATE_MASK(i)		(0x7u << MST_PORT_STATE_OFFSET(i))
+#define   MST_PORT_STATE_NO_STP		0
+#define   MST_PORT_DIS_STATE		1
+#define   MST_PORT_BLOCK_STATE		2
+#define   MST_PORT_LISTEN_STATE		3
+#define   MST_PORT_LEARN_STATE		4
+#define   MST_PORT_FWD_STATE		5
 
 /*************************************************************************
  * EEE Configuration Page Registers

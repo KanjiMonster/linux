@@ -281,15 +281,19 @@ static void b53_set_vlan_entry(struct b53_device *dev, u16 vid,
 		b53_write16(dev, B53_VLAN_PAGE, B53_VLAN_TABLE_ACCESS_65, vid |
 			    VTA_RW_STATE_WR | VTA_RW_OP_EN);
 	} else {
+		u32 entry = (vlan->untag << VTE_UNTAG_S) | vlan->members;
+
+		if (dev->num_msts > 0)
+			entry |= vlan->mst << VTE_MST_INDEX_S;
+
 		b53_write16(dev, B53_ARLIO_PAGE, dev->vta_regs[1], vid);
-		b53_write32(dev, B53_ARLIO_PAGE, dev->vta_regs[2],
-			    (vlan->untag << VTE_UNTAG_S) | vlan->members);
+		b53_write32(dev, B53_ARLIO_PAGE, dev->vta_regs[2], entry);
 
 		b53_do_vlan_op(dev, VTA_CMD_WRITE);
 	}
 
-	dev_dbg(dev->ds->dev, "VID: %d, members: 0x%04x, untag: 0x%04x\n",
-		vid, vlan->members, vlan->untag);
+	dev_dbg(dev->ds->dev, "VID: %d, members: 0x%04x, untag: 0x%04x mst: %02x\n",
+		vid, vlan->members, vlan->untag, vlan->mst);
 }
 
 static void b53_get_vlan_entry(struct b53_device *dev, u16 vid,
@@ -328,6 +332,11 @@ static void b53_get_vlan_entry(struct b53_device *dev, u16 vid,
 		vlan->members = entry & VTE_MEMBERS;
 		vlan->untag = (entry >> VTE_UNTAG_S) & VTE_MEMBERS;
 		vlan->valid = true;
+
+		if (dev->num_msts == 8)
+			vlan->mst = (entry & VTE_MST_INDEX_8) >> VTE_MST_INDEX_S;
+		else if (dev->num_msts == 16)
+			vlan->mst = (entry & VTE_MST_INDEX_16) >> VTE_MST_INDEX_S;
 	}
 }
 
@@ -1102,6 +1111,9 @@ static int b53_switch_reset(struct b53_device *dev)
 	b53_enable_mib(dev);
 	b53_enable_stp(dev);
 
+	if (dev->num_msts > 0)
+		b53_write16(dev, B53_MST_PAGE, B53_MST_CONTROL, MST_CONTROL_802_1_S_EN);
+
 	return b53_flush_arl(dev, FAST_AGE_STATIC);
 }
 
@@ -1780,6 +1792,51 @@ static int b53_vlan_prepare(struct dsa_switch *ds, int port,
 	return 0;
 }
 
+static void b53_mst_get(struct b53_device *dev, u8 mst, u16 msti)
+{
+
+	if (mst == 0)
+		return;
+
+	dev->msts[mst].refcnt++;
+
+	if (dev->msts[mst].refcnt == 1) {
+		u32 mst_table, cist_table;
+		int i;
+
+		dev->msts[mst].msti = msti;
+
+		b53_read32(dev, B53_MST_PAGE, B53_MST_TABLE(0), &cist_table);
+		b53_read32(dev, B53_MST_PAGE, B53_MST_TABLE(mst), &mst_table);
+		b53_for_each_port(dev, i) {
+			/* there is no field for port 8 */
+			if (i == B53_CPU_PORT)
+				continue;
+
+			mst_table &= ~MST_PORT_STATE_MASK(i);
+
+			/* Bridged ports default to disabled, non bridged follow
+			 * port state as they are not part of the tree
+			*/
+			if (dsa_to_port(dev->ds, i)->bridge)
+				mst_table |= MST_PORT_DIS_STATE << MST_PORT_STATE_OFFSET(i);
+			else
+				mst_table |= cist_table & MST_PORT_STATE_MASK(i);
+		}
+		b53_write32(dev, B53_MST_PAGE, B53_MST_TABLE(mst), mst_table);
+	}
+}
+
+static void b53_mst_put(struct b53_device *dev, u8 mst)
+{
+	if (mst == 0)
+		return;
+
+	dev->msts[mst].refcnt--;
+	if (dev->msts[mst].refcnt == 0)
+		dev->msts[mst].msti = 0;
+}
+
 int b53_vlan_add(struct dsa_switch *ds, int port,
 		 const struct switchdev_obj_port_vlan *vlan,
 		 struct netlink_ext_ack *extack)
@@ -1861,6 +1918,12 @@ int b53_vlan_del(struct dsa_switch *ds, int port,
 	if (!dev->vlan_filtering)
 		return 0;
 
+	/* if this was the last member, drop the mst membership */
+	if (vl->members == 0) {
+		b53_mst_put(dev, vl->mst);
+		vl->mst = 0;
+	}
+
 	b53_set_vlan_entry(dev, vlan->vid, vl);
 	b53_fast_age_vlan(dev, vlan->vid);
 
@@ -1870,6 +1933,64 @@ int b53_vlan_del(struct dsa_switch *ds, int port,
 	return 0;
 }
 EXPORT_SYMBOL(b53_vlan_del);
+
+int b53_vlan_msti_set(struct dsa_switch *ds, struct dsa_bridge bridge,
+		      const struct switchdev_vlan_msti *msti)
+{
+	struct b53_device *dev = ds->priv;
+	int old_mst, new_mst = -1;
+	struct b53_vlan *vl;
+	int i;
+
+	if (!dev->num_msts)
+		return -EOPNOTSUPP;
+
+	vl = &dev->vlans[msti->vid];
+	b53_get_vlan_entry(dev, msti->vid, vl);
+	old_mst = vl->mst;
+
+	for (i = 0; i < dev->num_msts; i++) {
+		if (dev->msts[i].msti == msti->msti) {
+			new_mst = i;
+			break;
+		}
+	}
+
+	if (old_mst == new_mst) {
+		return 0;
+	}
+
+	/* no existing mst, find an unused one */
+	if (new_mst < 0) {
+		for (i = 1; i < dev->num_msts; i++) {
+			if (dev->msts[i].msti == 0) {
+				new_mst = i;
+				break;
+			}
+		}
+	}
+
+	/* if no empty one found, check if we can reuse the entry */
+	if (new_mst < 0) {
+	       if (old_mst != 0 && dev->msts[old_mst].refcnt == 1) {
+			new_mst = old_mst;
+		} else {
+			return -ENOSPC;
+		}
+	}
+
+	if (vl->mst != new_mst) {
+		vl->mst = new_mst;
+		b53_set_vlan_entry(dev, msti->vid, vl);
+	}
+	b53_fast_age_vlan(dev, msti->vid);
+	
+	b53_mst_put(dev, old_mst);
+	b53_mst_get(dev, new_mst, msti->msti);
+
+	return 0;
+}
+EXPORT_SYMBOL(b53_vlan_msti_set);
 
 /* Address Resolution Logic routines. Caller must hold &dev->arl_mutex. */
 static int b53_arl_op_wait(struct b53_device *dev)
@@ -2321,6 +2442,47 @@ int b53_mdb_del(struct dsa_switch *ds, int port,
 }
 EXPORT_SYMBOL(b53_mdb_del);
 
+static int b53_set_mst_state(struct b53_device *dev, int port, u8 mst,
+			     u8 state)
+{
+	u32 mst_table;
+	u8 hw_state;
+
+	if (mst > dev->num_msts)
+		return -EINVAL;
+
+	if (port == B53_CPU_PORT)
+		return -EINVAL;
+
+	switch (state) {
+	case BR_STATE_DISABLED:
+		hw_state = MST_PORT_DIS_STATE;
+		break;
+	case BR_STATE_LISTENING:
+		hw_state = MST_PORT_LISTEN_STATE;
+		break;
+	case BR_STATE_LEARNING:
+		hw_state = MST_PORT_LEARN_STATE;
+		break;
+	case BR_STATE_FORWARDING:
+		hw_state = MST_PORT_FWD_STATE;
+		break;
+	case BR_STATE_BLOCKING:
+		hw_state = MST_PORT_BLOCK_STATE;
+		break;
+	default:
+		dev_err(dev->ds->dev, "invalid STP state: %d\n", state);
+		return -EINVAL;
+	}
+
+	b53_read32(dev, B53_MST_PAGE, B53_MST_TABLE(mst), &mst_table);
+	mst_table &= ~MST_PORT_STATE_MASK(port);
+	mst_table |= hw_state << MST_PORT_STATE_OFFSET(port);
+	b53_write32(dev, B53_MST_PAGE, B53_MST_TABLE(mst), mst_table);
+
+	return 0;
+}
+
 int b53_br_join(struct dsa_switch *ds, int port, struct dsa_bridge bridge,
 		bool *tx_fwd_offload, struct netlink_ext_ack *extack)
 {
@@ -2439,37 +2601,73 @@ void b53_br_leave(struct dsa_switch *ds, int port, struct dsa_bridge bridge)
 }
 EXPORT_SYMBOL(b53_br_leave);
 
+int b53_br_set_mst_state(struct dsa_switch *ds, int port,
+			 const struct switchdev_mst_state *st)
+{
+	struct b53_device *dev = ds->priv;
+	int i;
+
+	if (!dev->num_msts)
+		return -EOPNOTSUPP;
+
+	for (i = 0; i < dev->num_msts; i++) {
+		if (dev->msts[i].msti != st->msti)
+			continue;
+
+		return b53_set_mst_state(dev, port, i, st->state);
+	}
+
+	return -ENOENT;
+}
+EXPORT_SYMBOL(b53_br_set_mst_state);
+
 void b53_br_set_stp_state(struct dsa_switch *ds, int port, u8 state)
 {
 	struct b53_device *dev = ds->priv;
 	u8 hw_state;
 	u8 reg;
 
-	switch (state) {
-	case BR_STATE_DISABLED:
-		hw_state = PORT_CTRL_DIS_STATE;
-		break;
-	case BR_STATE_LISTENING:
-		hw_state = PORT_CTRL_LISTEN_STATE;
-		break;
-	case BR_STATE_LEARNING:
-		hw_state = PORT_CTRL_LEARN_STATE;
-		break;
-	case BR_STATE_FORWARDING:
-		hw_state = PORT_CTRL_FWD_STATE;
-		break;
-	case BR_STATE_BLOCKING:
-		hw_state = PORT_CTRL_BLOCK_STATE;
-		break;
-	default:
-		dev_err(ds->dev, "invalid STP state: %d\n", state);
-		return;
-	}
+	if (dev->num_msts) {
+		int i;
 
-	b53_read8(dev, B53_CTRL_PAGE, B53_PORT_CTRL(port), &reg);
-	reg &= ~PORT_CTRL_STP_STATE_MASK;
-	reg |= hw_state;
-	b53_write8(dev, B53_CTRL_PAGE, B53_PORT_CTRL(port), reg);
+		if (port == B53_CPU_PORT)
+			return;
+
+		/* Update CIST entry */
+		b53_set_mst_state(dev, port, 0, state);
+
+		if (dsa_to_port(dev->ds, port)->bridge)
+			return;
+
+		for (i = 1; i < dev->num_msts; i++)
+			b53_set_mst_state(dev, port, i, state);
+	} else {
+		switch (state) {
+			case BR_STATE_DISABLED:
+				hw_state = PORT_CTRL_DIS_STATE;
+				break;
+			case BR_STATE_LISTENING:
+				hw_state = PORT_CTRL_LISTEN_STATE;
+				break;
+			case BR_STATE_LEARNING:
+				hw_state = PORT_CTRL_LEARN_STATE;
+				break;
+			case BR_STATE_FORWARDING:
+				hw_state = PORT_CTRL_FWD_STATE;
+				break;
+			case BR_STATE_BLOCKING:
+				hw_state = PORT_CTRL_BLOCK_STATE;
+				break;
+			default:
+				dev_err(ds->dev, "invalid STP state: %d\n", state);
+				return;
+
+			b53_read8(dev, B53_CTRL_PAGE, B53_PORT_CTRL(port), &reg);
+			reg &= ~PORT_CTRL_STP_STATE_MASK;
+			reg |= hw_state;
+			b53_write8(dev, B53_CTRL_PAGE, B53_PORT_CTRL(port), reg);
+		}
+	}
 }
 EXPORT_SYMBOL(b53_br_set_stp_state);
 
@@ -2788,11 +2986,13 @@ static const struct dsa_switch_ops b53_switch_ops = {
 	.port_pre_bridge_flags	= b53_br_flags_pre,
 	.port_bridge_flags	= b53_br_flags,
 	.port_stp_state_set	= b53_br_set_stp_state,
+	.port_mst_state_set	= b53_br_set_mst_state,
 	.port_fast_age		= b53_br_fast_age,
 	.port_vlan_fast_age	= b53_br_port_vlan_fast_age,
 	.port_vlan_filtering	= b53_vlan_filtering,
 	.port_vlan_add		= b53_vlan_add,
 	.port_vlan_del		= b53_vlan_del,
+	.vlan_msti_set		= b53_vlan_msti_set,
 	.port_fdb_dump		= b53_fdb_dump,
 	.port_fdb_add		= b53_fdb_add,
 	.port_fdb_del		= b53_fdb_del,
@@ -2838,6 +3038,7 @@ struct b53_chip_data {
 	u8 vta_regs[3];
 	u8 arl_bins;
 	u16 arl_buckets;
+	u8 msts;
 	u8 duplex_reg;
 	u8 jumbo_pm_reg;
 	u8 jumbo_size_reg;
@@ -3183,6 +3384,7 @@ static int b53_switch_init(struct b53_device *dev)
 			dev->num_vlans = chip->vlans;
 			dev->num_arl_bins = chip->arl_bins;
 			dev->num_arl_buckets = chip->arl_buckets;
+			dev->num_msts = chip->msts;
 			dev->arl_ops = chip->arl_ops;
 			break;
 		}
@@ -3241,6 +3443,16 @@ static int b53_switch_init(struct b53_device *dev)
 				  GFP_KERNEL);
 	if (!dev->vlans)
 		return -ENOMEM;
+
+	if (dev->num_msts) {
+		dev->msts = devm_kcalloc(dev->dev,
+				         dev->num_msts, sizeof(struct b53_mst),
+					 GFP_KERNEL);
+		if (!dev->num_msts)
+			return -ENOMEM;
+		/* all vlans start out in 0 / CIST */
+		dev->msts[0].refcnt = dev->num_vlans;
+	}
 
 	dev->reset_gpio = b53_switch_get_reset_gpio(dev);
 	if (dev->reset_gpio >= 0) {

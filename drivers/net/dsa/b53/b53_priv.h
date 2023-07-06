@@ -126,7 +126,13 @@ struct b53_port {
 struct b53_vlan {
 	u16 members;
 	u16 untag;
+	u8 mst;
 	bool valid;
+};
+
+struct b53_mst {
+	u16 msti;
+	u16 refcnt;
 };
 
 struct b53_device {
@@ -176,6 +182,9 @@ struct b53_device {
 	bool vlan_filtering;
 	unsigned int num_ports;
 	struct b53_port *ports;
+
+	unsigned int num_msts;
+	struct b53_mst *msts;
 
 	struct b53_pcs pcs[B53_N_PCS];
 };
@@ -505,6 +514,8 @@ int b53_set_ageing_time(struct dsa_switch *ds, unsigned int msecs);
 int b53_br_join(struct dsa_switch *ds, int port, struct dsa_bridge bridge,
 		bool *tx_fwd_offload, struct netlink_ext_ack *extack);
 void b53_br_leave(struct dsa_switch *ds, int port, struct dsa_bridge bridge);
+int b53_br_set_mst_state(struct dsa_switch *ds, int port,
+			 const struct switchdev_mst_state *st);
 void b53_br_set_stp_state(struct dsa_switch *ds, int port, u8 state);
 void b53_br_fast_age(struct dsa_switch *ds, int port);
 int b53_br_port_vlan_fast_age(struct dsa_switch *ds, int port, u16 vid);
@@ -523,6 +534,8 @@ int b53_vlan_add(struct dsa_switch *ds, int port,
 		 struct netlink_ext_ack *extack);
 int b53_vlan_del(struct dsa_switch *ds, int port,
 		 const struct switchdev_obj_port_vlan *vlan);
+int b53_vlan_msti_set(struct dsa_switch *ds, struct dsa_bridge bridge,
+		      const struct switchdev_vlan_msti *msti);
 int b53_fdb_add(struct dsa_switch *ds, int port,
 		const unsigned char *addr, u16 vid,
 		struct dsa_db db);

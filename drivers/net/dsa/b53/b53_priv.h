@@ -507,6 +507,7 @@ int b53_br_join(struct dsa_switch *ds, int port, struct dsa_bridge bridge,
 void b53_br_leave(struct dsa_switch *ds, int port, struct dsa_bridge bridge);
 void b53_br_set_stp_state(struct dsa_switch *ds, int port, u8 state);
 void b53_br_fast_age(struct dsa_switch *ds, int port);
+int b53_br_port_vlan_fast_age(struct dsa_switch *ds, int port, u16 vid);
 int b53_br_flags_pre(struct dsa_switch *ds, int port,
 		     struct switchdev_brport_flags flags,
 		     struct netlink_ext_ack *extack);

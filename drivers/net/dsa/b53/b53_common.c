@@ -518,6 +518,14 @@ static int b53_fast_age_vlan(struct b53_device *dev, u16 vid)
 	return b53_flush_arl(dev, FAST_AGE_VLAN);
 }
 
+static int b53_fast_age_port_vlan(struct b53_device *dev, int port, u16 vid)
+{
+	b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_PORT_CTRL, port);
+	b53_write16(dev, B53_CTRL_PAGE, B53_FAST_AGE_VID_CTRL, vid);
+
+	return b53_flush_arl(dev, FAST_AGE_PORT | FAST_AGE_VLAN);
+}
+
 void b53_imp_vlan_setup(struct dsa_switch *ds, int cpu_port)
 {
 	struct b53_device *dev = ds->priv;
@@ -2051,6 +2059,14 @@ void b53_br_fast_age(struct dsa_switch *ds, int port)
 }
 EXPORT_SYMBOL(b53_br_fast_age);
 
+int b53_br_port_vlan_fast_age(struct dsa_switch *ds, int port, u16 vid)
+{
+	struct b53_device *dev = ds->priv;
+
+	return b53_fast_age_port_vlan(dev, port, vid);
+}
+EXPORT_SYMBOL(b53_br_port_vlan_fast_age);
+
 int b53_br_flags_pre(struct dsa_switch *ds, int port,
 		     struct switchdev_brport_flags flags,
 		     struct netlink_ext_ack *extack)
@@ -2325,6 +2341,7 @@ static const struct dsa_switch_ops b53_switch_ops = {
 	.port_bridge_flags	= b53_br_flags,
 	.port_stp_state_set	= b53_br_set_stp_state,
 	.port_fast_age		= b53_br_fast_age,
+	.port_vlan_fast_age	= b53_br_port_vlan_fast_age,
 	.port_vlan_filtering	= b53_vlan_filtering,
 	.port_vlan_add		= b53_vlan_add,
 	.port_vlan_del		= b53_vlan_del,

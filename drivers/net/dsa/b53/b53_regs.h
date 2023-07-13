@@ -163,9 +163,11 @@
 
 /* Fast Aging Port Control register (8 bit) */
 #define B53_FAST_AGE_PORT_CTRL		0x89
+#define  FAST_AGE_PORT_CTRL_ALL_PORTS	BIT(7) /* BCM538X only */
 
 /* Fast Aging VID Control register (16 bit) */
 #define B53_FAST_AGE_VID_CTRL		0x8a
+#define  FAST_AGE_VID_CTRL_ALL_VIDS	BIT(15) /* BCM538X only */
 
 /*************************************************************************
  * Status Page registers

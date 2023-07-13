@@ -459,8 +459,23 @@ static int b53_flush_arl(struct b53_device *dev, u8 mask)
 {
 	unsigned int i;
 
-	b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_CTRL,
-		   FAST_AGE_DONE | FAST_AGE_DYNAMIC | mask);
+	if (dev->chip_id == BCM5389_DEVICE_ID) {
+		if (mask & ~(FAST_AGE_PORT | FAST_AGE_VLAN | FAST_AGE_STATIC))
+			return -EOPNOTSUPP;
+
+		if (!(mask & FAST_AGE_PORT))
+			b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_PORT_CTRL,
+				   FAST_AGE_PORT_CTRL_ALL_PORTS);
+		if (!(mask & FAST_AGE_VLAN))
+			b53_write16(dev, B53_CTRL_PAGE, B53_FAST_AGE_VID_CTRL,
+				   FAST_AGE_VID_CTRL_ALL_VIDS);
+
+		b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_CTRL,
+			   FAST_AGE_DONE | (mask & FAST_AGE_STATIC));
+	} else {
+		b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_CTRL,
+			   FAST_AGE_DONE | FAST_AGE_DYNAMIC | mask);
+	}
 
 	for (i = 0; i < 10; i++) {
 		u8 fast_age_ctrl;
@@ -477,7 +492,12 @@ static int b53_flush_arl(struct b53_device *dev, u8 mask)
 	return -ETIMEDOUT;
 out:
 	/* Only age dynamic entries (default behavior) */
-	b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_CTRL, FAST_AGE_DYNAMIC);
+	if (dev->chip_id == BCM5389_DEVICE_ID) {
+		b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_CTRL, 0);
+	} else {
+		b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_CTRL,
+			   FAST_AGE_DYNAMIC);
+	}
 	return 0;
 }
 

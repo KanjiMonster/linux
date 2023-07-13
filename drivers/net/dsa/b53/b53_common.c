@@ -459,6 +459,9 @@ static int b53_flush_arl(struct b53_device *dev, u8 mask)
 {
 	unsigned int i;
 
+	if (is5325() || is5365())
+		return -EOPNOTSUPP;
+
 	if (dev->chip_id == BCM5389_DEVICE_ID) {
 		if (mask & ~(FAST_AGE_PORT | FAST_AGE_VLAN | FAST_AGE_STATIC))
 			return -EOPNOTSUPP;

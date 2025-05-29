@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 dtb-$(CONFIG_DT_BCM93384WVG)		+= bcm93384wvg.dtb
 dtb-$(CONFIG_DT_BCM93384WVG_VIPER)	+= bcm93384wvg_viper.dtb
+dtb-$(CONFIG_DT_BCM963268BU_P300)	+= bcm63268-brcm-bcm963268bu-p300.dtb
 dtb-$(CONFIG_DT_BCM96368MVWG)		+= bcm96368mvwg.dtb
 dtb-$(CONFIG_DT_BCM9EJTAGPRB)		+= bcm9ejtagprb.dtb
 dtb-$(CONFIG_DT_BCM97125CBMB)		+= bcm97125cbmb.dtb
@@ -20,6 +21,7 @@ dtb-$(CONFIG_DT_NONE) += \
 	bcm3368-netgear-cvg834g.dtb \
 	bcm6358-neufbox4-sercomm.dtb \
 	bcm6362-neufbox6-sercomm.dtb \
+	bcm63268-brcm-bcm963268bu-p300.dtb \
 	bcm63268-comtrend-vr-3032u.dtb \
 	bcm93384wvg.dtb \
 	bcm93384wvg_viper.dtb \

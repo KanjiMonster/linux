@@ -847,6 +847,17 @@ static int bcm63xx_hsspi_probe(struct platform_device *pdev)
 			goto out_put_host;
 	}
 
+	/* 
+	 * Do a dummy read to wake up(?) flash on CS 0, without it it replies with
+	 * nonsense and probing fails:
+	 *
+	 * spi-nor spi1.0: unrecognized JEDEC id bytes: ff 3f 11 ea 7d 8a
+	 */
+	__raw_writel(0xff, bs->regs + HSSPI_PROFILE_MODE_CTRL_REG(0));
+	iowrite16be(HSSPI_OP_READ | 1, bs->fifo);
+	__raw_writel(PINGPONG_COMMAND_START_NOW, bs->regs + HSSPI_PINGPONG_COMMAND_REG(0));
+	bcm63xx_hsspi_wait_cmd(bs);
+
 	pm_runtime_enable(&pdev->dev);
 
 	ret = sysfs_create_group(&pdev->dev.kobj, &bcm63xx_hsspi_group);

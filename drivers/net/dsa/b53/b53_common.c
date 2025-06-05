@@ -1363,16 +1363,15 @@ static void b53_adjust_531x5_rgmii(struct dsa_switch *ds, int port,
 	 *
 	 * PHY_INTERFACE_MODE_RGMII means that we are not introducing
 	 * any delay neither on transmission nor reception, so the
-	 * BCM53125 must also be configured accordingly to account for
-	 * the lack of delay and introduce
-	 *
-	 * The BCM53125 switch has its RX clock and TX clock control
-	 * swapped, hence the reason why we modify the TX clock path in
-	 * the "RGMII" case
+	 * BCM53125 must also be configured accordingly, and not enable
+	 * either delay.
+	 * 
+	 * PHY_INTERFACE_MODE_RGMII_ID means both TX internal delay and RX
+	 * interal delay, so enable delay on both paths.
 	 */
 	if (interface == PHY_INTERFACE_MODE_RGMII_TXID)
 		rgmii_ctrl |= RGMII_CTRL_DLL_TXC;
-	if (interface == PHY_INTERFACE_MODE_RGMII)
+	if (interface == PHY_INTERFACE_MODE_RGMII_ID)
 		rgmii_ctrl |= RGMII_CTRL_DLL_TXC | RGMII_CTRL_DLL_RXC;
 
 	if (dev->chip_id != BCM53115_DEVICE_ID)

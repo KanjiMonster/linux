@@ -561,12 +561,24 @@ out:
 
 static int b53_fast_age_port(struct b53_device *dev, int port)
 {
+	int ret;
+
 	if (is5325(dev))
 		return b53_fast_age_slow(dev, port, 0, FAST_AGE_PORT);
 
 	b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_PORT_CTRL, port);
+	ret = b53_flush_arl(dev, FAST_AGE_PORT);
+	if (ret)
+		return ret;
 
-	return b53_flush_arl(dev, FAST_AGE_PORT);
+	/* BCM63XX has a HW bug where entries with bit 39 set do not get
+	 * flushed when flushing a specific port, so purge those entries
+	 * via the slow method.
+	 */
+	if (is63xx(dev))
+		ret = b53_fast_age_slow(dev, port, 0, FAST_AGE_PORT);
+
+	return ret;
 }
 
 static int b53_fast_age_vlan(struct b53_device *dev, u16 vid)

@@ -225,6 +225,9 @@ static const struct b53_mib_desc b53_mibs_58xx[] = {
 	{ 4, 0xe4, "TxPkts1024toMaxPktOcets" },
 };
 
+static int b53_arl_op(struct b53_device *dev, int op, int port,
+                      const unsigned char *addr, u16 vid, bool is_valid);
+
 #define B53_MIBS_58XX_SIZE	ARRAY_SIZE(b53_mibs_58xx)
 
 #define B53_MAX_MTU_25		(1536 - ETH_HLEN - VLAN_HLEN - ETH_FCS_LEN)
@@ -488,12 +491,51 @@ static int b53_set_jumbo(struct b53_device *dev, bool enable, bool allow_10_100)
 	return b53_write16(dev, B53_JUMBO_PAGE, dev->jumbo_size_reg, max_size);
 }
 
+struct b53_fast_age_ctx {
+	struct b53_device *dev;
+	u16 vid;
+	u8 mask;
+};
+
+static int b53_fast_age_port_cb(const unsigned char *addr, u16 vid,
+				bool is_static, void *data)
+{
+	struct b53_fast_age_ctx *ctx = (struct b53_fast_age_ctx *)data;
+
+	if (!(ctx->mask & FAST_AGE_STATIC) && is_static)
+		return 0;
+
+	if ((ctx->mask & FAST_AGE_VLAN) && ctx->vid != vid)
+		return 0;
+
+	if (is_multicast_ether_addr(addr))
+		return 0;
+
+	/* lookup does not care about port, and for invalidation it does not
+	 * matter if the port is "wrong"
+	 */
+	b53_arl_op(ctx->dev, 0, 0, addr, vid, false);
+
+	return 0;
+}
+
+static int b53_fast_age_slow(struct b53_device *dev, int port, u16 vid, u8 mask)
+{
+	struct b53_fast_age_ctx ctx = {
+		.dev = dev,
+		.vid = vid,
+		.mask = mask,
+	};
+
+	return b53_fdb_dump(dev->ds, port, b53_fast_age_port_cb, &ctx);
+}
+
 static int b53_flush_arl(struct b53_device *dev, u8 mask)
 {
 	unsigned int i;
 
 	if (is5325(dev))
-		return 0;
+		return b53_fast_age_slow(dev, -1, 0, mask);
 
 	b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_CTRL,
 		   FAST_AGE_DONE | FAST_AGE_DYNAMIC | mask);
@@ -520,7 +562,7 @@ out:
 static int b53_fast_age_port(struct b53_device *dev, int port)
 {
 	if (is5325(dev))
-		return 0;
+		return b53_fast_age_slow(dev, port, 0, FAST_AGE_PORT);
 
 	b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_PORT_CTRL, port);
 
@@ -530,7 +572,7 @@ static int b53_fast_age_port(struct b53_device *dev, int port)
 static int b53_fast_age_vlan(struct b53_device *dev, u16 vid)
 {
 	if (is5325(dev))
-		return 0;
+		return b53_fast_age_slow(dev, -1, vid, FAST_AGE_VLAN);
 
 	b53_write16(dev, B53_CTRL_PAGE, B53_FAST_AGE_VID_CTRL, vid);
 
@@ -2174,7 +2216,7 @@ static int b53_fdb_copy(int port, const struct b53_arl_entry *ent,
 	if (!ent->is_valid)
 		return 0;
 
-	if (port != ent->port)
+	if (port >= 0 && port != ent->port)
 		return 0;
 
 	return cb(ent->mac, ent->vid, ent->is_static, data);

@@ -608,6 +608,22 @@ static int b53_fast_age_port_vlan(struct b53_device *dev, int port, u16 vid)
 	return b53_flush_arl(dev, FAST_AGE_PORT | FAST_AGE_VLAN);
 }
 
+static int b53_fast_age_port_mst(struct b53_device *dev, int port, u8 mst)
+{
+	u8 offset;
+
+	b53_write8(dev, B53_CTRL_PAGE, B53_FAST_AGE_PORT_CTRL, port);
+
+	if (is63xx(dev))
+		offset = B53_MST_AGEING_CONTROL_63XX;
+	else
+		offset = B53_MST_AGEING_CONTROL;
+
+	b53_write32(dev, B53_MST_PAGE, offset, BIT(mst));
+
+	return b53_flush_arl(dev, FAST_AGE_PORT | FAST_AGE_STP);
+}
+
 void b53_imp_vlan_setup(struct dsa_switch *ds, int cpu_port)
 {
 	struct b53_device *dev = ds->priv;
@@ -2446,7 +2462,7 @@ static int b53_set_mst_state(struct b53_device *dev, int port, u8 mst,
 			     u8 state)
 {
 	u32 mst_table;
-	u8 hw_state;
+	u8 hw_state, old_state;
 
 	if (mst > dev->num_msts)
 		return -EINVAL;
@@ -2476,11 +2492,12 @@ static int b53_set_mst_state(struct b53_device *dev, int port, u8 mst,
 	}
 
 	b53_read32(dev, B53_MST_PAGE, B53_MST_TABLE(mst), &mst_table);
+	old_state = mst_table & MST_PORT_STATE_MASK(port) >> MST_PORT_STATE_OFFSET(port);
 	mst_table &= ~MST_PORT_STATE_MASK(port);
 	mst_table |= hw_state << MST_PORT_STATE_OFFSET(port);
 	b53_write32(dev, B53_MST_PAGE, B53_MST_TABLE(mst), mst_table);
 
-	return 0;
+	return old_state;
 }
 
 int b53_br_join(struct dsa_switch *ds, int port, struct dsa_bridge bridge,
@@ -2605,7 +2622,8 @@ int b53_br_set_mst_state(struct dsa_switch *ds, int port,
 			 const struct switchdev_mst_state *st)
 {
 	struct b53_device *dev = ds->priv;
-	int i;
+	struct dsa_port *dp = dsa_to_port(ds, port);
+	int ret, i;
 
 	if (!dev->num_msts)
 		return -EOPNOTSUPP;
@@ -2614,7 +2632,19 @@ int b53_br_set_mst_state(struct dsa_switch *ds, int port,
 		if (dev->msts[i].msti != st->msti)
 			continue;
 
-		return b53_set_mst_state(dev, port, i, st->state);
+		ret = b53_set_mst_state(dev, port, i, st->state);
+		if (ret < 0)
+			return ret;
+
+		if (dp->learning &&
+		    (ret == MST_PORT_LEARN_STATE ||
+		     ret == MST_PORT_FWD_STATE) &&
+		    (st->state == BR_STATE_DISABLED ||
+		     st->state == BR_STATE_BLOCKING ||
+		     st->state == BR_STATE_LISTENING))
+		    b53_fast_age_port_mst(dev, port, i);
+
+		return 0;
 	}
 
 	return -ENOENT;

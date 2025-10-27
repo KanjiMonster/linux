@@ -542,6 +542,10 @@
 #define B53_MST_CONTROL			0x00
 #define  MST_CONTROL_802_1_S_EN		BIT(0)
 
+/* MST Ageing Control Register (32 bit) */
+#define B53_MST_AGEING_CONTROL		0x02
+#define B53_MST_AGEING_CONTROL_63XX	0x04
+
 /* MST Table Registers */
 #define B53_MST_TABLE(mst)		(0x10 + (mst) * 0x4)
 #define  MST_PORT_STATE_OFFSET(i)	((i) * 3)

@@ -332,6 +332,7 @@
 #define   ARLTBL_VID_MASK		0xfff
 #define   ARLTBL_DATA_PORT_ID_S_25	48
 #define   ARLTBL_DATA_PORT_ID_MASK_25	0xf
+#define   ARLTBL_DATA_PORT_MASK_25	0x7f
 #define   ARLTBL_AGE_25			BIT_ULL(61)
 #define   ARLTBL_STATIC_25		BIT_ULL(62)
 #define   ARLTBL_VALID_25		BIT_ULL(63)
@@ -379,8 +380,15 @@
 
 /* Single register search result on 5325/5365 */
 #define B53_ARL_SRCH_RSTL_0_MACVID_25	0x24
+#define   ARLTBL_SRCH_RSLT_PORT_ID_S_25	48
+#define   ARLTBL_SRCH_RSLT_PORT_ID_MASK_25	0xf
+#define   ARLTBL_SRCH_RSLT_PORT_MASK_25	0x1f
 #define   ARLTBL_SRCH_RSLT_VID_S_25	53
 #define   ARLTBL_SRCH_RSLT_VID_MASK_25	0xff
+
+/* BCM5325/5365 Search result extend register (8 bit) */
+#define B53_ARL_SRCH_RSLT_EXT_25	0x2c
+#define   ARLTBL_SRCH_RSLT_EXT_MC_MII	BIT(2)
 
 /* ARL Search Data Result (32 bit) */
 #define B53_ARL_SRCH_RSTL_0		0x68

@@ -1908,18 +1908,23 @@ static void b53_arl_read_entry_25(struct b53_device *dev,
 				  struct b53_arl_entry *ent, u8 idx)
 {
 	u64 mac_vid;
+	u8 vid_entry;
 
 	b53_read64(dev, B53_ARLIO_PAGE, B53_ARLTBL_MAC_VID_ENTRY(idx),
 		   &mac_vid);
-	b53_arl_to_entry_25(ent, mac_vid);
+	b53_read8(dev, B53_ARLIO_PAGE, B53_ARLTBL_VID_ENTRY_25(idx),
+		  &vid_entry);
+	b53_arl_to_entry_25(ent, mac_vid, vid_entry);
 }
 
 static void b53_arl_write_entry_25(struct b53_device *dev,
 				   const struct b53_arl_entry *ent, u8 idx)
 {
 	u64 mac_vid;
+	u8 vid_entry;
 
-	b53_arl_from_entry_25(&mac_vid, ent);
+	b53_arl_from_entry_25(&mac_vid, &vid_entry, ent);
+	b53_write8(dev, B53_ARLIO_PAGE, B53_ARLTBL_VID_ENTRY_25(idx), vid_entry);
 	b53_write64(dev, B53_ARLIO_PAGE, B53_ARLTBL_MAC_VID_ENTRY(idx),
 		    mac_vid);
 }
@@ -2172,7 +2177,7 @@ static void b53_arl_search_read_25(struct b53_device *dev, u8 idx,
 
 	b53_read64(dev, B53_ARLIO_PAGE, B53_ARL_SRCH_RSTL_0_MACVID_25,
 		   &mac_vid);
-	b53_arl_to_entry_25(ent, mac_vid);
+	b53_arl_search_to_entry_25(ent, mac_vid);
 }
 
 static void b53_arl_search_read_89(struct b53_device *dev, u8 idx,

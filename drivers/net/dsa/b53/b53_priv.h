@@ -357,12 +357,16 @@ static inline void b53_arl_to_entry_25(struct b53_arl_entry *ent,
 	ent->is_age = !!(mac_vid & ARLTBL_AGE_25);
 	ent->is_static = !!(mac_vid & ARLTBL_STATIC_25);
 	u64_to_ether_addr(mac_vid, ent->mac);
-	if (is_multicast_ether_addr(ent->mac))
+	if (is_multicast_ether_addr(ent->mac)) {
 		ent->port = (mac_vid >> ARLTBL_DATA_PORT_ID_S_25) &
 		     ARLTBL_DATA_PORT_MASK_25;
-	else
+	} else {
 		ent->port = (mac_vid >> ARLTBL_DATA_PORT_ID_S_25) &
 		     ARLTBL_DATA_PORT_ID_MASK_25;
+
+		if (ent->port == B53_CPU_PORT)
+			ent->port = B53_CPU_PORT_25;
+	}
 	ent->vid = vid_entry;
 }
 
@@ -396,12 +400,16 @@ static inline void b53_arl_from_entry_25(u64 *mac_vid, u8 *vid_entry,
 					 const struct b53_arl_entry *ent)
 {
 	*mac_vid = ether_addr_to_u64(ent->mac);
-	if (is_multicast_ether_addr(ent->mac))
+	if (is_multicast_ether_addr(ent->mac)) {
 		*mac_vid |= (u64)(ent->port & ARLTBL_DATA_PORT_MASK_25) <<
 				  ARLTBL_DATA_PORT_ID_S_25;
-	else
-		*mac_vid |= (u64)(ent->port & ARLTBL_DATA_PORT_ID_MASK_25) <<
-				  ARLTBL_DATA_PORT_ID_S_25;
+	} else {
+		if (ent->port == B53_CPU_PORT_25)
+			*mac_vid |= (u64)B53_CPU_PORT << ARLTBL_DATA_PORT_ID_S_25;
+		else
+			*mac_vid |= (u64)(ent->port & ARLTBL_DATA_PORT_ID_MASK_25) <<
+					  ARLTBL_DATA_PORT_ID_S_25;
+	}
 	if (ent->is_valid)
 		*mac_vid |= ARLTBL_VALID_25;
 	if (ent->is_static)

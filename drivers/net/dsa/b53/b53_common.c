@@ -1331,11 +1331,22 @@ static int b53_setup(struct dsa_switch *ds)
 	/* Configure IMP/CPU port, disable all other ports. Enabled
 	 * ports will be configured with .port_enable
 	 */
-	for (port = 0; port < dev->num_ports; port++) {
-		if (dsa_is_cpu_port(ds, port))
-			b53_enable_cpu_port(dev, port);
-		else
-			b53_disable_port(ds, port);
+	for (port = 0; port < dev->num_ports; port++)
+		b53_disable_port(ds, port);
+
+	if (dsa_is_cpu_port(ds, B53_CPU_PORT)) {
+		if (dsa_is_cpu_port(ds, 5))
+			dev_dbg(ds->dev, "dual IMP mode not supported\n");
+
+		b53_enable_cpu_port(dev, B53_CPU_PORT);
+	} else if (dsa_is_cpu_port(ds, 5)) {
+		if (!is5325(dev) && !is5365(dev))
+			dev_err(ds->dev, "using IMP1 as CPU port is broken\n");
+
+		b53_enable_cpu_port(dev, 5);
+	} else {
+		dev_err(ds->dev, "no valid CPU port configuration found\n");
+		return -EINVAL;
 	}
 
 	return b53_setup_devlink_resources(ds);

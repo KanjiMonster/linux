@@ -844,9 +844,14 @@ static void b53_enable_cpu_port(struct b53_device *dev, int port)
 	if ((is5325(dev) || is5365(dev)) && port == B53_CPU_PORT_25)
 		port = B53_CPU_PORT;
 
-	port_ctrl = PORT_CTRL_RX_BCST_EN |
-		    PORT_CTRL_RX_MCST_EN |
-		    PORT_CTRL_RX_UCST_EN;
+	if (port == B53_CPU_PORT) {
+		port_ctrl = PORT_CTRL_RX_BCST_EN |
+			    PORT_CTRL_RX_MCST_EN |
+			    PORT_CTRL_RX_UCST_EN;
+	} else {
+		port_ctrl = 0;
+	}
+
 	b53_write8(dev, B53_CTRL_PAGE, B53_PORT_CTRL(port), port_ctrl);
 
 	b53_brcm_hdr_setup(dev->ds, port);
